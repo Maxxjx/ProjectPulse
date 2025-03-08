@@ -1,0 +1,577 @@
+'use client';
+
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import Link from 'next/link';
+import { useSummaryAnalytics, useRecentActivity } from '@/lib/hooks/useAnalytics';
+
+// Dashboard components
+const AdminDashboard = () => {
+  const { data: analytics, isLoading: isLoadingAnalytics } = useSummaryAnalytics();
+  const { data: recentActivity, isLoading: isLoadingActivity } = useRecentActivity(5);
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+      
+      {isLoadingAnalytics ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-[#111827] rounded-lg p-6 animate-pulse">
+              <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
+              <div className="h-8 bg-gray-700 rounded w-1/4 mb-2"></div>
+              <div className="h-4 bg-gray-700 rounded w-2/3"></div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-[#111827] rounded-lg p-6">
+            <h2 className="font-semibold text-xl mb-2">Projects</h2>
+            <div className="flex justify-between items-center">
+              <span className="text-3xl font-bold">{analytics?.projects.total || 0}</span>
+              <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded text-sm">
+                {analytics?.projects.inProgress || 0} in progress
+              </span>
+            </div>
+            <div className="mt-4">
+              <Link 
+                href="/dashboard/projects" 
+                className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm flex items-center"
+              >
+                View all projects
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+          
+          <div className="bg-[#111827] rounded-lg p-6">
+            <h2 className="font-semibold text-xl mb-2">Users</h2>
+            <div className="flex justify-between items-center">
+              <span className="text-3xl font-bold">{analytics?.users.total || 0}</span>
+              <span className="bg-blue-500/20 text-blue-500 px-2 py-1 rounded text-sm">
+                {analytics?.users.team || 0} team members
+              </span>
+            </div>
+            <div className="mt-4">
+              <Link 
+                href="/dashboard/users" 
+                className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm flex items-center"
+              >
+                Manage users
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+          
+          <div className="bg-[#111827] rounded-lg p-6">
+            <h2 className="font-semibold text-xl mb-2">Budget</h2>
+            <div className="flex justify-between items-center">
+              <span className="text-3xl font-bold">${(analytics?.budget.total || 0).toLocaleString()}</span>
+              <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded text-sm">
+                {analytics?.budget.utilization || 0}% used
+              </span>
+            </div>
+            <div className="mt-4">
+              <Link 
+                href="/dashboard/analytics" 
+                className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm flex items-center"
+              >
+                View reports
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-[#111827] rounded-lg p-6">
+          <h2 className="font-semibold text-xl mb-4">Recent Activity</h2>
+          
+          {isLoadingActivity ? (
+            <div className="space-y-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="flex items-start animate-pulse">
+                  <div className="w-8 h-8 rounded-full bg-gray-700 mr-3"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-700 rounded w-1/2"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentActivity && recentActivity.length > 0 ? (
+                recentActivity.map((activity) => (
+                  <div key={activity.id} className="flex items-start">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm mr-3 ${
+                      activity.action === 'created' ? 'bg-green-500' : 
+                      activity.action === 'updated' ? 'bg-blue-500' : 
+                      activity.action === 'deleted' ? 'bg-red-500' :
+                      activity.action === 'completed' ? 'bg-purple-500' : 'bg-gray-500'
+                    }`}>
+                      {activity.userName.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-sm">
+                        {activity.userName} {activity.action} {activity.entityType} 
+                        <span className="text-[#8B5CF6]"> {activity.entityName}</span>
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(activity.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-400">No recent activity.</p>
+              )}
+            </div>
+          )}
+          
+          <div className="mt-4 text-center">
+            <button className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm">View all activity</button>
+          </div>
+        </div>
+        
+        <div className="bg-[#111827] rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-semibold text-xl">Tasks Overview</h2>
+            <select className="bg-[#1F2937] border border-gray-600 rounded text-sm px-2 py-1">
+              <option>All Tasks</option>
+              <option>Overdue</option>
+              <option>Completed</option>
+            </select>
+          </div>
+          
+          {isLoadingAnalytics ? (
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="animate-pulse">
+                  <div className="flex justify-between text-sm mb-1">
+                    <div className="h-4 bg-gray-700 rounded w-1/3"></div>
+                    <div className="h-4 bg-gray-700 rounded w-12"></div>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div className="bg-gray-600 h-2 rounded-full" style={{ width: '30%' }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm">Total Tasks</span>
+                  <span className="text-sm">{analytics?.tasks.total || 0}</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-1.5">
+                  <div className="bg-[#8B5CF6] h-1.5 rounded-full" style={{ width: '100%' }}></div>
+                </div>
+              </div>
+              
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm">Completed</span>
+                  <span className="text-sm">{analytics?.tasks.completed || 0}</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-1.5">
+                  <div className="bg-green-500 h-1.5 rounded-full" style={{ 
+                    width: `${analytics ? (analytics.tasks.completed / analytics.tasks.total) * 100 : 0}%` 
+                  }}></div>
+                </div>
+              </div>
+              
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm">In Progress</span>
+                  <span className="text-sm">{analytics?.tasks.inProgress || 0}</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-1.5">
+                  <div className="bg-blue-500 h-1.5 rounded-full" style={{ 
+                    width: `${analytics ? (analytics.tasks.inProgress / analytics.tasks.total) * 100 : 0}%` 
+                  }}></div>
+                </div>
+              </div>
+              
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm">Overdue</span>
+                  <span className="text-sm text-red-500">{analytics?.tasks.overdue || 0}</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-1.5">
+                  <div className="bg-red-500 h-1.5 rounded-full" style={{ 
+                    width: `${analytics ? (analytics.tasks.overdue / analytics.tasks.total) * 100 : 0}%` 
+                  }}></div>
+                </div>
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-gray-700">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Completion Rate</span>
+                  <span className="text-sm font-medium text-green-500">{analytics?.tasks.completion || 0}%</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="mt-4 text-center">
+            <Link 
+              href="/dashboard/tasks" 
+              className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm"
+            >
+              View all tasks
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TeamDashboard = () => {
+  return (
+    <div>
+      <h1 className="text-3xl font-bold mb-6">Team Dashboard</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-[#111827] rounded-lg p-6">
+          <h2 className="font-semibold text-xl mb-2">My Tasks</h2>
+          <div className="flex justify-between items-center">
+            <span className="text-3xl font-bold">23</span>
+            <span className="bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded text-sm">8 due soon</span>
+          </div>
+          <div className="mt-4">
+            <Link 
+              href="/dashboard/tasks" 
+              className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm flex items-center"
+            >
+              View all tasks
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+        
+        <div className="bg-[#111827] rounded-lg p-6">
+          <h2 className="font-semibold text-xl mb-2">Active Projects</h2>
+          <div className="flex justify-between items-center">
+            <span className="text-3xl font-bold">7</span>
+            <span className="bg-blue-500/20 text-blue-500 px-2 py-1 rounded text-sm">2 new</span>
+          </div>
+          <div className="mt-4">
+            <Link 
+              href="/dashboard/projects" 
+              className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm flex items-center"
+            >
+              View projects
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+        
+        <div className="bg-[#111827] rounded-lg p-6">
+          <h2 className="font-semibold text-xl mb-2">Time Logged</h2>
+          <div className="flex justify-between items-center">
+            <span className="text-3xl font-bold">32h</span>
+            <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded text-sm">This Week</span>
+          </div>
+          <div className="mt-4">
+            <Link 
+              href="/dashboard/analytics" 
+              className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm flex items-center"
+            >
+              View time report
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-[#111827] rounded-lg p-6">
+          <h2 className="font-semibold text-xl mb-4">Upcoming Deadlines</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-red-500 mr-3"></div>
+                <div>
+                  <p className="text-sm font-medium">Design UI Components</p>
+                  <p className="text-xs text-gray-400">Website Redesign</p>
+                </div>
+              </div>
+              <div className="text-red-500 text-sm">Today</div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-orange-500 mr-3"></div>
+                <div>
+                  <p className="text-sm font-medium">Complete User Research</p>
+                  <p className="text-xs text-gray-400">Mobile App</p>
+                </div>
+              </div>
+              <div className="text-orange-500 text-sm">Tomorrow</div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-yellow-500 mr-3"></div>
+                <div>
+                  <p className="text-sm font-medium">API Integration</p>
+                  <p className="text-xs text-gray-400">Payment System</p>
+                </div>
+              </div>
+              <div className="text-yellow-500 text-sm">In 2 days</div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-blue-500 mr-3"></div>
+                <div>
+                  <p className="text-sm font-medium">Create Documentation</p>
+                  <p className="text-xs text-gray-400">Marketing Campaign</p>
+                </div>
+              </div>
+              <div className="text-blue-500 text-sm">Next week</div>
+            </div>
+          </div>
+          <div className="mt-4 text-center">
+            <button className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm">View all deadlines</button>
+          </div>
+        </div>
+        
+        <div className="bg-[#111827] rounded-lg p-6">
+          <h2 className="font-semibold text-xl mb-4">Team Activity</h2>
+          <div className="space-y-4">
+            <div className="flex items-start">
+              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm mr-3">JD</div>
+              <div>
+                <p className="text-sm">John completed the homepage design</p>
+                <p className="text-xs text-gray-400">1 hour ago</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-sm mr-3">AS</div>
+              <div>
+                <p className="text-sm">Alex submitted the backend code for review</p>
+                <p className="text-xs text-gray-400">3 hours ago</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-sm mr-3">ML</div>
+              <div>
+                <p className="text-sm">Maria fixed 3 bugs in the payment system</p>
+                <p className="text-xs text-gray-400">Yesterday</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-white text-sm mr-3">TW</div>
+              <div>
+                <p className="text-sm">Tom added new test cases for the API</p>
+                <p className="text-xs text-gray-400">Yesterday</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 text-center">
+            <button className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm">View all activity</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ClientDashboard = () => {
+  return (
+    <div>
+      <h1 className="text-3xl font-bold mb-6">Client Dashboard</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-[#111827] rounded-lg p-6">
+          <h2 className="font-semibold text-xl mb-2">Active Projects</h2>
+          <div className="flex justify-between items-center">
+            <span className="text-3xl font-bold">3</span>
+            <span className="bg-blue-500/20 text-blue-500 px-2 py-1 rounded text-sm">In Progress</span>
+          </div>
+          <div className="mt-4">
+            <Link 
+              href="/dashboard/projects" 
+              className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm flex items-center"
+            >
+              View projects
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+        
+        <div className="bg-[#111827] rounded-lg p-6">
+          <h2 className="font-semibold text-xl mb-2">Total Budget</h2>
+          <div className="flex justify-between items-center">
+            <span className="text-3xl font-bold">$75,000</span>
+            <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded text-sm">$45,500 used</span>
+          </div>
+          <div className="mt-4">
+            <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+              <div className="bg-green-500 h-2 rounded-full" style={{ width: '60%' }}></div>
+            </div>
+            <div className="text-xs text-gray-400">60% of budget used</div>
+          </div>
+        </div>
+        
+        <div className="bg-[#111827] rounded-lg p-6">
+          <h2 className="font-semibold text-xl mb-2">Support Tickets</h2>
+          <div className="flex justify-between items-center">
+            <span className="text-3xl font-bold">2</span>
+            <span className="bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded text-sm">Open</span>
+          </div>
+          <div className="mt-4">
+            <Link 
+              href="/dashboard/support" 
+              className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm flex items-center"
+            >
+              View tickets
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-[#111827] rounded-lg p-6">
+          <h2 className="font-semibold text-xl mb-4">Project Timeline</h2>
+          <div className="space-y-6 relative before:absolute before:top-0 before:bottom-0 before:left-3 before:w-0.5 before:bg-gray-700">
+            <div className="flex">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500 z-10 flex items-center justify-center mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium">Project Kickoff</p>
+                <p className="text-xs text-gray-400">Completed on May 15, 2023</p>
+              </div>
+            </div>
+            <div className="flex">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500 z-10 flex items-center justify-center mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium">Design Phase</p>
+                <p className="text-xs text-gray-400">Completed on June 10, 2023</p>
+              </div>
+            </div>
+            <div className="flex">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 z-10 flex items-center justify-center mt-0.5">
+                <div className="w-2 h-2 bg-white rounded-full"></div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium">Development</p>
+                <p className="text-xs text-gray-400">In progress - 60% complete</p>
+                <div className="w-full bg-gray-700 rounded-full h-1 mt-2">
+                  <div className="bg-blue-500 h-1 rounded-full" style={{ width: '60%' }}></div>
+                </div>
+              </div>
+            </div>
+            <div className="flex">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-700 z-10 mt-0.5"></div>
+              <div className="ml-4">
+                <p className="text-sm font-medium">Testing</p>
+                <p className="text-xs text-gray-400">Scheduled for August 2023</p>
+              </div>
+            </div>
+            <div className="flex">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-700 z-10 mt-0.5"></div>
+              <div className="ml-4">
+                <p className="text-sm font-medium">Deployment</p>
+                <p className="text-xs text-gray-400">Scheduled for September 2023</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-[#111827] rounded-lg p-6">
+          <h2 className="font-semibold text-xl mb-4">Recent Updates</h2>
+          <div className="space-y-4">
+            <div className="p-3 bg-[#1F2937] rounded-lg">
+              <div className="flex justify-between mb-1">
+                <p className="text-sm font-medium">Website Redesign</p>
+                <p className="text-xs text-gray-400">3 days ago</p>
+              </div>
+              <p className="text-sm text-gray-300">Frontend development completed for the homepage and about section. Team is now working on the product catalog pages.</p>
+            </div>
+            <div className="p-3 bg-[#1F2937] rounded-lg">
+              <div className="flex justify-between mb-1">
+                <p className="text-sm font-medium">Mobile App</p>
+                <p className="text-xs text-gray-400">1 week ago</p>
+              </div>
+              <p className="text-sm text-gray-300">User authentication system implemented. Design team finalized the UI for product screens.</p>
+            </div>
+            <div className="p-3 bg-[#1F2937] rounded-lg">
+              <div className="flex justify-between mb-1">
+                <p className="text-sm font-medium">Payment Integration</p>
+                <p className="text-xs text-gray-400">2 weeks ago</p>
+              </div>
+              <p className="text-sm text-gray-300">Successfully integrated PayPal and Stripe payment gateways. Testing in progress with dummy transactions.</p>
+            </div>
+          </div>
+          <div className="mt-4 text-center">
+            <button className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm">View all updates</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function Dashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  // Render role-specific dashboard
+  const renderDashboard = () => {
+    switch (session?.user?.role) {
+      case 'admin':
+        return <AdminDashboard />;
+      case 'team':
+        return <TeamDashboard />;
+      case 'client':
+        return <ClientDashboard />;
+      default:
+        return <TeamDashboard />;
+    }
+  };
+
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6]"></div>
+      </div>
+    );
+  }
+
+  return <>{renderDashboard()}</>;
+} 
