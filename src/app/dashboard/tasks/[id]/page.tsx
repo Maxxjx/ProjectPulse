@@ -5,9 +5,10 @@ import { useTask, useUpdateTask } from '@/lib/hooks/useTasks';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import TaskComments from '@/components/TaskComments';
+import TimeTracker from '@/components/TimeTracker';
 import { TaskStatus, Priority } from '@/lib/data/types';
 
-export default function TaskDetailPage({ params }: { params: { id: string } }) {
+export default function TaskDetailView({ params }: { params: { id: string } }) {
   const taskId = parseInt(params.id);
   const { data: session } = useSession();
   const { data: task, isLoading, error } = useTask(taskId);
@@ -215,59 +216,69 @@ export default function TaskDetailPage({ params }: { params: { id: string } }) {
           
           <p className="text-gray-300 mb-6">{task.description}</p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-1">Project</h3>
-              <p>{task.project}</p>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-1">Assignee</h3>
-              <p>{task.assignee}</p>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-1">Created</h3>
-              <p>{new Date(task.created).toLocaleDateString()}</p>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-1">Deadline</h3>
-              <p className={new Date() > new Date(task.deadline) ? 'text-red-500' : ''}>
-                {new Date(task.deadline).toLocaleDateString()}
-              </p>
-            </div>
-            
-            {task.estimatedHours && (
-              <div>
-                <h3 className="text-sm font-medium text-gray-400 mb-1">Estimated Hours</h3>
-                <p>{task.estimatedHours} hours</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="md:col-span-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-400 mb-1">Project</h3>
+                  <p>{task.project}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-400 mb-1">Assignee</h3>
+                  <p>{task.assignee}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-400 mb-1">Created</h3>
+                  <p>{new Date(task.created).toLocaleDateString()}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-400 mb-1">Deadline</h3>
+                  <p className={new Date() > new Date(task.deadline) ? 'text-red-500' : ''}>
+                    {new Date(task.deadline).toLocaleDateString()}
+                  </p>
+                </div>
+                
+                {task.estimatedHours && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-400 mb-1">Estimated Hours</h3>
+                    <p>{task.estimatedHours} hours</p>
+                  </div>
+                )}
+                
+                {task.actualHours && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-400 mb-1">Actual Hours</h3>
+                    <p>{task.actualHours} hours</p>
+                  </div>
+                )}
               </div>
-            )}
+              
+              {task.tags && task.tags.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-400 mb-2">Tags</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {task.tags.map((tag, index) => (
+                      <span 
+                        key={index} 
+                        className="px-2 py-1 bg-[#1F2937] rounded-md text-xs"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             
-            {task.actualHours && (
-              <div>
-                <h3 className="text-sm font-medium text-gray-400 mb-1">Actual Hours</h3>
-                <p>{task.actualHours} hours</p>
-              </div>
-            )}
+            <div>
+              {session?.user?.role !== 'client' && (
+                <TimeTracker taskId={taskId} taskName={task.title} />
+              )}
+            </div>
           </div>
-          
-          {task.tags && task.tags.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-400 mb-2">Tags</h3>
-              <div className="flex flex-wrap gap-2">
-                {task.tags.map((tag, index) => (
-                  <span 
-                    key={index} 
-                    className="px-2 py-1 bg-[#1F2937] rounded-md text-xs"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 

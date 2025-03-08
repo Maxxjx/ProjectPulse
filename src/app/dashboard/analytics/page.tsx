@@ -6,7 +6,7 @@ import ProjectStatusChart from '@/components/charts/ProjectStatusChart';
 import TaskStatusChart from '@/components/charts/TaskStatusChart';
 import UserTasksChart from '@/components/charts/UserTasksChart';
 
-export default function AnalyticsDashboard() {
+export default function AnalyticsDashboardView() {
   const { data: analytics, isLoading } = useSummaryAnalytics();
   const [timeRange, setTimeRange] = useState('month');
 

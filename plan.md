@@ -70,8 +70,7 @@ Extra Features:
 - Set up automated in-app/email notifications for project updates, deadlines, or changes.
 - Optimize for mobile-first design and add PWA support.
 - Develop robust API endpoints for third-party integrations (CRM, ERP, etc.).
-- Add two-factor authentication (2FA) support via authenticator apps.
--Add  document sharing to Client's Role-Specific Features:
+
 
 Database Migration:
 - Migrate from mock data to a real database

@@ -58,7 +58,7 @@ const sampleProjects = [
   },
 ];
 
-export default function Projects() {
+export default function ProjectListView() {
   const { data: session } = useSession();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');

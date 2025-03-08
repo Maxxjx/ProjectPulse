@@ -114,16 +114,33 @@ export interface TimeEntry {
   createdAt: string;
 }
 
+// Define notification types
+export type NotificationType = 
+  | 'task_assigned'
+  | 'task_completed'
+  | 'task_deadline'
+  | 'comment_added'
+  | 'project_update'
+  | 'document_shared'
+  | 'mention';
+
 export interface Notification {
   id: number;
-  userId: string;
+  userId: number;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: NotificationType;
+  entityId?: number; // ID of the related task, project, etc.
+  entityType?: string; // 'task', 'project', etc.
   read: boolean;
-  relatedToType?: 'project' | 'task' | 'comment';
-  relatedToId?: number;
   createdAt: string;
+  actionUrl?: string; // URL to navigate to when notification is clicked
+}
+
+export interface EmailNotification extends Notification {
+  recipientEmail: string;
+  emailSent: boolean;
+  emailSentAt?: string;
 }
 
 export interface ActivityLog {
@@ -136,4 +153,31 @@ export interface ActivityLog {
   entityName: string;
   details?: string;
   timestamp: string;
+}
+
+// Define widget types
+export type WidgetType = 
+  | 'task_summary'
+  | 'project_status'
+  | 'recent_activity'
+  | 'team_workload'
+  | 'upcoming_deadlines'
+  | 'budget_overview'
+  | 'time_tracking_summary'
+  | 'quick_actions';
+
+export interface DashboardWidget {
+  id: string;
+  type: WidgetType;
+  title: string;
+  size: 'small' | 'medium' | 'large';
+  position: number;
+  settings?: Record<string, any>;
+}
+
+export interface UserDashboardConfig {
+  userId: number;
+  widgets: DashboardWidget[];
+  layout: 'grid' | 'list';
+  lastUpdated: string;
 } 

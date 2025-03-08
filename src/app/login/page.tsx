@@ -116,9 +116,14 @@ export default function Login() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-400 mb-1">
-                Password
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-400">
+                  Password
+                </label>
+                <Link href="/reset-password" className="text-xs text-[#8B5CF6] hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 id="password"
                 name="password"
@@ -142,23 +147,15 @@ export default function Login() {
                   Remember me
                 </label>
               </div>
-
-              <div className="text-sm">
-                <a href="#" className="text-[#8B5CF6] hover:text-[#a78bfa]">
-                  Forgot password?
-                </a>
-              </div>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#8B5CF6] hover:bg-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8B5CF6] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Signing in...' : 'Sign in'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-[#8B5CF6] hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8B5CF6] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Signing in...' : 'Sign in'}
+            </button>
           </form>
 
           <div className="mt-6">
