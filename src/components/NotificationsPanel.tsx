@@ -161,20 +161,25 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
       className="fixed inset-0 z-50 bg-black/30 flex justify-end"
       aria-modal="true"
       role="dialog"
+      aria-labelledby="notifications-title"
     >
       <div 
         ref={panelRef}
+        id="notifications-panel"
         className="w-full max-w-md h-full bg-[#111827] shadow-xl flex flex-col overflow-hidden transition-transform duration-300 ease-in-out transform"
         style={{ maxHeight: '100vh' }}
+        tabIndex={-1}
+        aria-live="polite"
       >
         <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-          <h2 className="text-lg font-medium">Notifications</h2>
+          <h2 id="notifications-title" className="text-lg font-medium">Notifications</h2>
           <div className="flex items-center gap-2">
             {notifications?.some(n => !n.isRead) && (
               <button
                 onClick={handleMarkAllAsRead}
                 className="text-sm text-[#8B5CF6] hover:text-[#A78BFA] transition"
                 disabled={markAllAsRead.isPending}
+                aria-live="polite"
               >
                 {markAllAsRead.isPending ? 'Marking...' : 'Mark all as read'}
               </button>
@@ -193,7 +198,7 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
         
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {isLoading ? (
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4" aria-busy="true" aria-label="Loading notifications">
               {[1, 2, 3].map(i => (
                 <div key={i} className="flex items-start animate-pulse">
                   <div className="w-8 h-8 rounded-full bg-gray-700 mr-3"></div>
@@ -206,12 +211,12 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
               ))}
             </div>
           ) : error ? (
-            <div className="p-4 text-center text-red-500">
+            <div className="p-4 text-center text-red-500" role="alert">
               Failed to load notifications
             </div>
           ) : notifications?.length === 0 ? (
-            <div className="p-4 text-center text-gray-400 flex flex-col items-center justify-center h-full">
-              <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4">
+            <div className="p-4 text-center text-gray-400 flex flex-col items-center justify-center h-full" aria-label="No notifications">
+              <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
@@ -220,7 +225,7 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
               <p className="text-sm text-gray-500 mt-1">You're all caught up!</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-700">
+            <div className="divide-y divide-gray-700" role="list" aria-label="Notifications list">
               {notifications?.map((notification) => (
                 <Link
                   key={notification.id}
@@ -229,18 +234,33 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
                     !notification.isRead ? 'bg-[#1F2937]/50' : ''
                   }`}
                   onClick={() => handleNotificationClick(notification)}
+                  role="listitem"
+                  aria-labelledby={`notification-title-${notification.id}`}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleNotificationClick(notification);
+                    }
+                  }}
                 >
                   <div className="flex items-start">
-                    <div className="mr-3 flex-shrink-0">
+                    <div className="mr-3 flex-shrink-0" aria-hidden="true">
                       {getNotificationIcon(notification.type)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <h3 className={`text-sm font-medium truncate ${!notification.isRead ? 'text-white' : 'text-gray-300'}`}>
+                        <h3 
+                          id={`notification-title-${notification.id}`}
+                          className={`text-sm font-medium truncate ${!notification.isRead ? 'text-white' : 'text-gray-300'}`}
+                        >
                           {notification.title}
                         </h3>
                         {!notification.isRead && (
-                          <span className="inline-block w-2 h-2 bg-[#8B5CF6] rounded-full ml-2 flex-shrink-0"></span>
+                          <span 
+                            className="inline-block w-2 h-2 bg-[#8B5CF6] rounded-full ml-2 flex-shrink-0" 
+                            aria-label="Unread"
+                          ></span>
                         )}
                       </div>
                       <p className="text-sm text-gray-400 mb-1 line-clamp-2">

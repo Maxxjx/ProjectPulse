@@ -1,29 +1,33 @@
-// Service Worker for ProjectPulse PWA
+// Service Worker for ProjectPulse
+const CACHE_NAME = 'projectpulse-cache-v1';
 
-const CACHE_NAME = 'projectpulse-v1';
-const urlsToCache = [
+// Assets to cache on install
+const STATIC_ASSETS = [
   '/',
-  '/login',
-  '/dashboard',
+  '/index.html',
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
+  '/favicon.ico',
 ];
 
-// Install service worker and cache app shell
+// Install event - cache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .catch((error) => {
+        console.error('Error caching static assets:', error);
       })
   );
-  // Force the waiting service worker to become the active service worker
+  // Activate the service worker immediately
   self.skipWaiting();
 });
 
-// Clean up old caches when a new service worker activates
+// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
@@ -31,30 +35,70 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
-            // If this cache name isn't present in the whitelist, delete it
             return caches.delete(cacheName);
           }
         })
       );
     })
   );
-  // Ensure the service worker takes control of the page as soon as it activates
+  // Claim clients so the service worker is in control immediately
   self.clients.claim();
 });
 
-// Serve cached content when offline
+// Helper function to determine if a request is for an API
+const isApiRequest = (url) => {
+  return url.pathname.startsWith('/api/');
+};
+
+// Helper function to determine if a request is for an HTML page
+const isHTMLPageRequest = (url) => {
+  return (
+    !url.pathname.includes('.') || 
+    url.pathname.endsWith('.html') || 
+    url.pathname.endsWith('/')
+  );
+};
+
+// Fetch event - handle network requests
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
   
-  // Skip cross-origin requests
-  if (!event.request.url.startsWith(self.location.origin)) return;
-  
-  // Avoid caching API calls
-  if (event.request.url.includes('/api/')) {
+  // For API requests, use network first, then cache
+  if (isApiRequest(url)) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Cache the successful API response
+          if (response.ok) {
+            const clonedResponse = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, clonedResponse);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try to serve from cache
+          return caches.match(event.request);
+        })
+    );
     return;
   }
-  
+
+  // For HTML page requests, use network first with a fallback to a cached app shell
+  if (isHTMLPageRequest(url)) {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          // If network fails and this is a navigation request,
+          // serve the cached index page as a fallback
+          return caches.match('/');
+        })
+    );
+    return;
+  }
+
+  // For all other requests, use cache first, then network
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -62,52 +106,108 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-        
-        // If not in cache, fetch from network
-        return fetch(event.request)
+
+        // Clone the request because it's a one-time use stream
+        const fetchRequest = event.request.clone();
+
+        // Make network request
+        return fetch(fetchRequest)
           .then((response) => {
-            // Check if we received a valid response
+            // Check for valid response
             if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
             }
-            
-            // Clone the response so we can use it twice (one for cache, one for browser)
+
+            // Clone the response because it's a one-time use stream
             const responseToCache = response.clone();
-            
+
+            // Cache the new resource
             caches.open(CACHE_NAME)
               .then((cache) => {
                 cache.put(event.request, responseToCache);
               });
-            
+
             return response;
           })
-          .catch(() => {
-            // If fetch fails (e.g., offline), try to return a cached page for navigation
-            if (event.request.mode === 'navigate') {
+          .catch((error) => {
+            console.error('Fetch error:', error);
+            // If fetch fails, try to return the offline page
+            if (isHTMLPageRequest(url)) {
               return caches.match('/');
             }
-            
-            // For other resources, we can't provide a fallback
-            return new Response('Network error occurred', {
-              status: 503,
-              headers: { 'Content-Type': 'text/plain' },
-            });
+            return new Response('Network error', { status: 408, statusText: 'Offline' });
           });
       })
   );
 });
 
+// Listen for sync events for offline operations
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-tasks') {
+    event.waitUntil(syncTasks());
+  }
+});
+
+// Process offline task operations
+async function syncTasks() {
+  try {
+    // Get the offline queue from indexedDB
+    const offlineQueue = await getOfflineQueue();
+    
+    // Process each operation
+    for (const operation of offlineQueue) {
+      await sendToServer(operation);
+    }
+    
+    // Clear the offline queue
+    await clearOfflineQueue();
+    
+    // Notify the clients
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'SYNC_COMPLETED',
+          message: 'Your changes have been synchronized'
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Error syncing tasks:', error);
+  }
+}
+
+// Simulated function to get offline queue (in a real app, this would use IndexedDB)
+async function getOfflineQueue() {
+  // This is a placeholder - in a real app, this would retrieve from IndexedDB
+  return [];
+}
+
+// Simulated function to clear offline queue
+async function clearOfflineQueue() {
+  // This is a placeholder - in a real app, this would clear IndexedDB
+  return true;
+}
+
+// Send operation to server
+async function sendToServer(operation) {
+  // This is a placeholder - in a real app, this would send the operation to the server
+  console.log('Syncing operation:', operation);
+  return true;
+}
+
 // Handle push notifications
 self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  
   const data = event.data.json();
   
   const options = {
-    body: data.message,
+    body: data.body,
     icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
+    badge: '/icons/badge-128x128.png',
     data: {
-      url: data.actionUrl || '/',
-    },
+      url: data.url
+    }
   };
   
   event.waitUntil(
@@ -115,11 +215,27 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Handle notification clicks
+// Handle notification click
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
+  const url = event.notification.data.url || '/';
+  
   event.waitUntil(
-    clients.openWindow(event.notification.data.url)
+    clients.matchAll({ type: 'window' }).then((windowClients) => {
+      // Check if there is already a window/tab open with the target URL
+      for (let client of windowClients) {
+        if (client.url === url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      
+      // If no window/tab is open, open a new one
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+    })
   );
-}); 
+});
+
+console.log('Service Worker Loaded'); 

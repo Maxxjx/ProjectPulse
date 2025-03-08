@@ -94,6 +94,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [activeNavIndex, setActiveNavIndex] = useState(-1); // For keyboard navigation
   const pathname = usePathname();
   const { unreadCount, isLoading: isLoadingNotifications } = useUnreadNotificationsCount();
 
@@ -122,6 +123,37 @@ export default function DashboardLayout({
       setSidebarOpen(false);
     }
   }, [pathname, isMobile]);
+
+  // Handle keyboard navigation with arrow keys
+  const handleKeyboardNavigation = (e: React.KeyboardEvent, items: any[]) => {
+    // Only handle keyboard navigation when sidebar is open
+    if (!sidebarOpen) return;
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setActiveNavIndex(prev => (prev < items.length - 1 ? prev + 1 : 0));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActiveNavIndex(prev => (prev > 0 ? prev - 1 : items.length - 1));
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        if (activeNavIndex >= 0 && activeNavIndex < items.length) {
+          // Simulate clicking the item
+          window.location.href = items[activeNavIndex].href;
+        }
+        break;
+      case 'Escape':
+        // Close sidebar on Escape key
+        if (isMobile && sidebarOpen) {
+          setSidebarOpen(false);
+        }
+        break;
+    }
+  };
 
   // Get navigation items based on user role
   const getNavItems = (role?: string) => {
@@ -184,10 +216,38 @@ export default function DashboardLayout({
 
   const navItems = getNavItems(session?.user?.role);
 
+  // Focus trap for modal dialogs
+  useEffect(() => {
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key === 'Tab' && notificationsOpen) {
+        // Handle tab key focus trap for notifications panel
+        // This is a simplified version - a real implementation would need to find all focusable elements
+        const notificationsPanel = document.getElementById('notifications-panel');
+        if (notificationsPanel) {
+          const focusableElements = notificationsPanel.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+          const firstElement = focusableElements[0] as HTMLElement;
+          const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+          
+          if (e.shiftKey && document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          } else if (!e.shiftKey && document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', handleTabKey);
+    return () => document.removeEventListener('keydown', handleTabKey);
+  }, [notificationsOpen]);
+
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-[#1F2937] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6]"></div>
+      <div className="min-h-screen bg-[#1F2937] flex items-center justify-center" aria-live="polite" aria-busy="true">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6]" role="status"></div>
+        <span className="sr-only">Loading...</span>
       </div>
     );
   }
@@ -196,7 +256,7 @@ export default function DashboardLayout({
     // Redirect to login page or show access denied
     return (
       <div className="min-h-screen bg-[#1F2937] flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center" role="alert" aria-live="assertive">
           <h2 className="text-xl font-bold mb-4">Access Denied</h2>
           <p className="text-gray-400 mb-4">You must be signed in to access this page.</p>
           <Link href="/login" className="bg-[#8B5CF6] hover:bg-opacity-90 transition px-4 py-2 rounded">
@@ -223,10 +283,12 @@ export default function DashboardLayout({
         className={`fixed inset-y-0 left-0 bg-[#111827] z-50 w-64 transition-transform duration-300 transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:w-20'
         } md:static md:flex-shrink-0`}
+        role="navigation"
+        aria-label="Main Navigation"
       >
         <div className="h-full flex flex-col">
           <div className={`flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'} h-16 px-4 border-b border-gray-700`}>
-            <Link href="/dashboard" className="flex items-center">
+            <Link href="/dashboard" className="flex items-center" aria-label="Dashboard Home">
               <div className="h-8 w-8 bg-[#8B5CF6] rounded-md flex items-center justify-center">
                 <span className="text-white font-bold">P</span>
               </div>
@@ -236,6 +298,8 @@ export default function DashboardLayout({
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)} 
               className="md:hidden text-gray-400 hover:text-white"
+              aria-expanded={sidebarOpen}
+              aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -244,8 +308,13 @@ export default function DashboardLayout({
           </div>
           
           <div className="overflow-y-auto flex-1">
-            <nav className="mt-5 px-2 space-y-1">
-              {navItems.map((item) => {
+            <nav 
+              className="mt-5 px-2 space-y-1"
+              onKeyDown={(e) => handleKeyboardNavigation(e, navItems)}
+              role="menubar"
+              aria-orientation="vertical"
+            >
+              {navItems.map((item, index) => {
                 const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
                 return (
                   <Link 
@@ -256,8 +325,13 @@ export default function DashboardLayout({
                         ? 'bg-[#8B5CF6] text-white' 
                         : 'text-gray-300 hover:bg-[#1F2937] hover:text-white'
                     } ${!sidebarOpen && 'justify-center'}`}
+                    aria-current={isActive ? 'page' : undefined}
+                    role="menuitem"
+                    tabIndex={0}
+                    onFocus={() => setActiveNavIndex(index)}
+                    aria-label={item.name}
                   >
-                    <div className={`${sidebarOpen ? 'mr-3' : ''}`}>{item.icon}</div>
+                    <div className={`${sidebarOpen ? 'mr-3' : ''}`} aria-hidden="true">{item.icon}</div>
                     {sidebarOpen && <span>{item.name}</span>}
                   </Link>
                 );
@@ -269,8 +343,11 @@ export default function DashboardLayout({
           <div className={`border-t border-gray-700 p-4 ${sidebarOpen ? '' : 'text-center'}`}>
             {session.user?.image ? (
               <div className={`flex ${sidebarOpen ? 'items-start' : 'justify-center'}`}>
-                <div className="h-8 w-8 rounded-full bg-gray-600 flex-shrink-0 overflow-hidden">
-                  <img src={session.user.image} alt="Profile" />
+                <div 
+                  className="h-8 w-8 rounded-full bg-gray-600 flex-shrink-0 overflow-hidden"
+                  aria-hidden="true"
+                >
+                  <img src={session.user.image} alt={`${session.user.name}'s profile`} />
                 </div>
                 {sidebarOpen && (
                   <div className="ml-3">
@@ -281,7 +358,10 @@ export default function DashboardLayout({
               </div>
             ) : (
               <div className={`flex ${sidebarOpen ? 'items-start' : 'justify-center'}`}>
-                <div className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
+                <div 
+                  className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0"
+                  aria-hidden="true"
+                >
                   {session.user?.name?.[0] || "U"}
                 </div>
                 {sidebarOpen && (
@@ -304,6 +384,9 @@ export default function DashboardLayout({
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="text-gray-400 hover:text-white focus:outline-none focus:text-white"
+                aria-expanded={sidebarOpen}
+                aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+                aria-controls="main-sidebar"
               >
                 <MenuIcon />
               </button>
@@ -320,11 +403,16 @@ export default function DashboardLayout({
                   className="text-gray-400 hover:text-white"
                   onClick={() => setNotificationsOpen(true)}
                   aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
+                  aria-haspopup="dialog"
+                  aria-expanded={notificationsOpen}
                 >
                   <span className="relative inline-block">
                     <NotificationIcon />
                     {!isLoadingNotifications && unreadCount > 0 && (
-                      <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-xs">
+                      <span 
+                        className="absolute top-0 right-0 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-xs"
+                        aria-hidden="true"
+                      >
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
                     )}
@@ -343,6 +431,7 @@ export default function DashboardLayout({
                 <button
                   onClick={() => signOut({ callbackUrl: '/' })}
                   className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center"
+                  aria-label="Sign out"
                 >
                   {session.user?.name?.[0] || "U"}
                 </button>
@@ -352,6 +441,7 @@ export default function DashboardLayout({
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
                 className="bg-[#8B5CF6] hover:bg-opacity-90 transition px-3 py-1 rounded text-sm hidden md:block"
+                aria-label="Sign out"
               >
                 Sign Out
               </button>
@@ -360,9 +450,22 @@ export default function DashboardLayout({
         </header>
 
         {/* Main Content */}
-        <main className="flex-1">
+        <main 
+          className="flex-1"
+          id="main-content"
+          role="main"
+          tabIndex={-1}
+        >
           {children}
         </main>
+        
+        {/* Skip to content link (hidden until focused) */}
+        <a 
+          href="#main-content" 
+          className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#8B5CF6] focus:text-white"
+        >
+          Skip to content
+        </a>
       </div>
     </div>
   );
