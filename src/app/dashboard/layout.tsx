@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUnreadNotificationsCount } from '@/lib/hooks/useNotifications';
-import NotificationDropdown from '@/components/NotificationDropdown';
+import NotificationsPanel from '@/components/NotificationsPanel';
 
 // Icons
 const HomeIcon = () => (
@@ -92,11 +92,38 @@ export default function DashboardLayout({
 }) {
   const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
-  const { data: unreadCount = 0, isLoading: isLoadingNotifications } = useUnreadNotificationsCount();
+  const { unreadCount, isLoading: isLoadingNotifications } = useUnreadNotificationsCount();
 
-  // Define navigation items based on user role
+  // Detect mobile screen size and auto-collapse sidebar
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      }
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
+  // Close sidebar when navigating on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [pathname, isMobile]);
+
+  // Get navigation items based on user role
   const getNavItems = (role?: string) => {
     const items = [
       {
@@ -155,109 +182,134 @@ export default function DashboardLayout({
     );
   };
 
-  // Filter navigation items based on user role
   const navItems = getNavItems(session?.user?.role);
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1F2937] text-white">
+      <div className="min-h-screen bg-[#1F2937] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6]"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    // Redirect to login page or show access denied
+    return (
+      <div className="min-h-screen bg-[#1F2937] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold mb-4">Access Denied</h2>
+          <p className="text-gray-400 mb-4">You must be signed in to access this page.</p>
+          <Link href="/login" className="bg-[#8B5CF6] hover:bg-opacity-90 transition px-4 py-2 rounded">
+            Sign In
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#1F2937] text-white flex">
-      {/* Sidebar (collapsible) */}
+      {/* Overlay for mobile */}
+      {sidebarOpen && isMobile && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      
+      {/* Sidebar */}
       <aside 
-        className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } bg-[#111827] transition-all duration-300 fixed inset-y-0 z-50 flex flex-col`}
+        className={`fixed inset-y-0 left-0 bg-[#111827] z-50 w-64 transition-transform duration-300 transform ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:w-20'
+        } md:static md:flex-shrink-0`}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-700">
-          <div className={`flex items-center ${!sidebarOpen && 'justify-center w-full'}`}>
-            <div className="w-8 h-8 bg-[#8B5CF6] rounded-md flex items-center justify-center">
-              <span className="font-bold text-white">P</span>
-            </div>
-            {sidebarOpen && (
-              <span className="ml-2 font-semibold text-lg">ProjectPulse</span>
-            )}
-          </div>
-          {sidebarOpen ? (
+        <div className="h-full flex flex-col">
+          <div className={`flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'} h-16 px-4 border-b border-gray-700`}>
+            <Link href="/dashboard" className="flex items-center">
+              <div className="h-8 w-8 bg-[#8B5CF6] rounded-md flex items-center justify-center">
+                <span className="text-white font-bold">P</span>
+              </div>
+              {sidebarOpen && <span className="ml-2 font-bold text-lg">ProjectPulse</span>}
+            </Link>
+            
             <button 
-              onClick={() => setSidebarOpen(false)}
-              className="text-gray-400 hover:text-white"
-              title="Collapse sidebar"
+              onClick={() => setSidebarOpen(!sidebarOpen)} 
+              className="md:hidden text-gray-400 hover:text-white"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-          ) : (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="text-gray-400 hover:text-white absolute right-2"
-              title="Expand sidebar"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-              </svg>
-            </button>
-          )}
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 pt-5 pb-4 overflow-y-auto">
-          <ul className="space-y-1 px-2">
-            {navItems.map((item) => (
-              <li key={item.name}>
-                <Link
-                  href={item.href}
-                  className={`
-                    flex items-center px-4 py-2 text-sm font-medium rounded-md 
-                    ${pathname === item.href ? 'bg-[#8B5CF6] text-white' : 'text-gray-300 hover:bg-gray-700'}
-                    ${!sidebarOpen && 'justify-center'}
-                  `}
-                >
-                  <span className="mr-3">{item.icon}</span>
-                  {sidebarOpen && <span>{item.name}</span>}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        
-        {/* User Info */}
-        <div className="p-4 border-t border-gray-700">
-          <div className={`flex ${!sidebarOpen && 'justify-center'}`}>
-            <div className="w-8 h-8 rounded-full bg-[#8B5CF6] flex items-center justify-center">
-              {session?.user?.name?.charAt(0) || 'U'}
-            </div>
-            {sidebarOpen && (
-              <div className="ml-3">
-                <p className="text-sm font-medium truncate">{session?.user?.name}</p>
-                <p className="text-xs text-gray-400 truncate capitalize">{session?.user?.role}</p>
+          </div>
+          
+          <div className="overflow-y-auto flex-1">
+            <nav className="mt-5 px-2 space-y-1">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                return (
+                  <Link 
+                    key={item.name}
+                    href={item.href}
+                    className={`flex items-center py-2 px-3 rounded-md transition-colors ${
+                      isActive 
+                        ? 'bg-[#8B5CF6] text-white' 
+                        : 'text-gray-300 hover:bg-[#1F2937] hover:text-white'
+                    } ${!sidebarOpen && 'justify-center'}`}
+                  >
+                    <div className={`${sidebarOpen ? 'mr-3' : ''}`}>{item.icon}</div>
+                    {sidebarOpen && <span>{item.name}</span>}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+          
+          {/* User Profile Section */}
+          <div className={`border-t border-gray-700 p-4 ${sidebarOpen ? '' : 'text-center'}`}>
+            {session.user?.image ? (
+              <div className={`flex ${sidebarOpen ? 'items-start' : 'justify-center'}`}>
+                <div className="h-8 w-8 rounded-full bg-gray-600 flex-shrink-0 overflow-hidden">
+                  <img src={session.user.image} alt="Profile" />
+                </div>
+                {sidebarOpen && (
+                  <div className="ml-3">
+                    <p className="text-sm font-medium">{session.user.name}</p>
+                    <p className="text-xs text-gray-400">{session.user.role}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className={`flex ${sidebarOpen ? 'items-start' : 'justify-center'}`}>
+                <div className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
+                  {session.user?.name?.[0] || "U"}
+                </div>
+                {sidebarOpen && (
+                  <div className="ml-3">
+                    <p className="text-sm font-medium">{session.user.name}</p>
+                    <p className="text-xs text-gray-400">{session.user.role}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
+      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
         {/* Header */}
         <header className="bg-[#111827] shadow-md sticky top-0 z-40">
           <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-gray-400 hover:text-white focus:outline-none focus:text-white md:hidden"
-            >
-              <MenuIcon />
-            </button>
-            
-            <div className="flex-1">
+            <div className="flex-1 flex items-center">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="text-gray-400 hover:text-white focus:outline-none focus:text-white"
+              >
+                <MenuIcon />
+              </button>
+              
               {session?.user?.role === 'admin' && (
-                <h1 className="text-xl font-bold">Admin Dashboard</h1>
+                <h1 className="text-xl font-bold ml-4 hidden sm:block">Admin Dashboard</h1>
               )}
             </div>
             
@@ -266,7 +318,8 @@ export default function DashboardLayout({
               <div className="relative">
                 <button 
                   className="text-gray-400 hover:text-white"
-                  onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
+                  onClick={() => setNotificationsOpen(true)}
+                  aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
                 >
                   <span className="relative inline-block">
                     <NotificationIcon />
@@ -278,12 +331,24 @@ export default function DashboardLayout({
                   </span>
                 </button>
                 
-                {notificationDropdownOpen && (
-                  <NotificationDropdown onClose={() => setNotificationDropdownOpen(false)} />
-                )}
+                {/* Render the new NotificationsPanel component */}
+                <NotificationsPanel 
+                  isOpen={notificationsOpen} 
+                  onClose={() => setNotificationsOpen(false)} 
+                />
               </div>
               
-              {/* Sign Out Button */}
+              {/* Mobile Profile Menu Button */}
+              <div className="relative block md:hidden">
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center"
+                >
+                  {session.user?.name?.[0] || "U"}
+                </button>
+              </div>
+              
+              {/* Sign Out Button (Desktop) */}
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
                 className="bg-[#8B5CF6] hover:bg-opacity-90 transition px-3 py-1 rounded text-sm hidden md:block"
@@ -293,9 +358,9 @@ export default function DashboardLayout({
             </div>
           </div>
         </header>
-        
-        {/* Page Content */}
-        <main className="py-6 px-4 sm:px-6 lg:px-8">
+
+        {/* Main Content */}
+        <main className="flex-1">
           {children}
         </main>
       </div>
