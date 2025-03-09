@@ -69,7 +69,9 @@ Security Measures:
 Enforce HTTPS, sanitize all inputs, implement rate limiting, and setup CSRF protection.
 Conduct regular security audits.
 Documentation:
-Provide comprehensive API documentation (e.g., with Swagger), user guides per role, a developer setup guide, deployment instructions, and contribution guidelines.
+Provide comprehensive API documentation (e.g., with Swagger)
+Detailed technical documentation including design diagrams and user guides
+Developer setup guide, deployment instructions, and contribution guidelines.
 Requirements:
 
 Use Next.js 14 with the App Router.

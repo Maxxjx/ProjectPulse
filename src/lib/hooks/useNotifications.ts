@@ -137,4 +137,4 @@ export const useDeleteNotification = () => {
       queryClient.invalidateQueries({ queryKey: ['unreadNotifications', userId] });
     },
   });
-}; 
+};
