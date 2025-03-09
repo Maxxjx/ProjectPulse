@@ -1,8 +1,15 @@
 'use client';
 
+import React from 'react';
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Settings | ProjectPulse',
+  description: 'Manage your ProjectPulse account settings',
+};
 
 const settingsSections = [
   {
@@ -76,63 +83,96 @@ const settingsSections = [
 
 export default function SettingsPage() {
   const { data: session } = useSession();
-  
+  const [activeIndex, setActiveIndex] = React.useState<number>(-1);
+
+  // Handle keyboard navigation for the settings sections
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setActiveIndex((index + 1) % settingsSections.length);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActiveIndex((index - 1 + settingsSections.length) % settingsSections.length);
+        break;
+      case 'Home':
+        e.preventDefault();
+        setActiveIndex(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        setActiveIndex(settingsSections.length - 1);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Focus on the active section when activeIndex changes
+  React.useEffect(() => {
+    if (activeIndex >= 0) {
+      const activeElement = document.getElementById(`settings-section-${activeIndex}`);
+      if (activeElement) {
+        activeElement.focus();
+      }
+    }
+  }, [activeIndex]);
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
-      
-      <div className="bg-[#1F2937] rounded-lg shadow-lg p-6 mb-8">
-        <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
-          <div className="w-16 h-16 bg-[#111827] rounded-full flex items-center justify-center text-2xl font-bold flex-shrink-0">
-            {session?.user?.name?.[0] || "U"}
-          </div>
-          
-          <div className="flex-1">
-            <h2 className="text-xl font-medium">{session?.user?.name || "User"}</h2>
-            <p className="text-gray-400">{session?.user?.email || "user@example.com"}</p>
-            <p className="text-sm text-[#8B5CF6] capitalize mt-1">{session?.user?.role || "user"} Account</p>
-          </div>
-          
-          <div>
-            <Link 
-              href="/dashboard/settings/profile" 
-              className="inline-flex items-center px-4 py-2 bg-[#8B5CF6] hover:bg-opacity-90 active:bg-opacity-100 rounded-md transition"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-              </svg>
-              Edit Profile
-            </Link>
-          </div>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {settingsSections.map((section) => (
-          <Link
-            key={section.id}
-            href={section.href}
-            className="bg-[#1F2937] hover:bg-[#283548] active:bg-[#1a2536] rounded-lg p-6 transition-colors"
-          >
-            <div className="flex items-center mb-4">
-              <div className="w-10 h-10 bg-[#111827] rounded-lg flex items-center justify-center mr-3 text-[#8B5CF6]">
-                {section.icon}
-              </div>
-              <h2 className="text-lg font-medium">{section.title}</h2>
-            </div>
-            <p className="text-gray-400 text-sm">{section.description}</p>
-          </Link>
-        ))}
-      </div>
-      
-      <div className="mt-12 bg-[#1F2937] rounded-lg shadow-lg p-6">
-        <h2 className="text-lg font-medium mb-4">Danger Zone</h2>
-        <p className="text-gray-400 mb-4">
-          Permanently delete your account and all of your content from ProjectPulse. This action cannot be undone.
+    <div className="py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <h1 className="text-2xl font-semibold text-gray-200">Settings</h1>
+        <p className="mt-1 text-sm text-gray-400" id="settings-description">
+          Manage your account settings and preferences
         </p>
-        <button className="px-4 py-2 bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-md text-white transition">
-          Delete Account
-        </button>
+      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <div 
+          className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+          role="navigation"
+          aria-labelledby="settings-navigation"
+        >
+          <h2 id="settings-navigation" className="sr-only">Settings navigation</h2>
+          
+          {settingsSections.map((section, index) => (
+            <Link
+              key={section.id}
+              href={section.href}
+              id={`settings-section-${index}`}
+              className="bg-[#1F2937] overflow-hidden rounded-lg shadow divide-y divide-gray-700 hover:bg-[#283548] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              aria-labelledby={`section-name-${section.id}`}
+              aria-describedby={`section-desc-${section.id}`}
+              tabIndex={0}
+              onKeyDown={(e) => handleKeyDown(e, index)}
+              onFocus={() => setActiveIndex(index)}
+            >
+              <div className="px-4 py-5 sm:p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 bg-[#374151] p-2 rounded-md">
+                    <span className="text-purple-500" aria-hidden="true">
+                      {section.icon}
+                    </span>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <h3 
+                      id={`section-name-${section.id}`}
+                      className="text-lg font-medium text-gray-200 truncate"
+                    >
+                      {section.title}
+                    </h3>
+                    <p 
+                      id={`section-desc-${section.id}`}
+                      className="mt-1 text-sm text-gray-400"
+                    >
+                      {section.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

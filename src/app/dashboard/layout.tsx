@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useUnreadNotificationsCount } from '@/lib/hooks/useNotifications';
 import NotificationsPanel from '@/components/NotificationsPanel';
 
@@ -85,16 +86,16 @@ const ReportsIcon = () => (
   </svg>
 );
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// Instantiate a global QueryClient
+const queryClient = new QueryClient();
+
+function DashboardContent({ children }: { children: React.ReactNode }) {
+  // All hooks are now called inside the provider
   const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [activeNavIndex, setActiveNavIndex] = useState(-1); // For keyboard navigation
+  const [activeNavIndex, setActiveNavIndex] = useState(-1);
   const pathname = usePathname();
   const { unreadCount, isLoading: isLoadingNotifications } = useUnreadNotificationsCount();
 
@@ -280,7 +281,7 @@ export default function DashboardLayout({
       
       {/* Sidebar */}
       <aside 
-        className={`fixed inset-y-0 left-0 bg-[#111827] z-50 w-64 transition-transform duration-300 transform ${
+        className={`fixed inset-y-0 left-0 bg-gradient-to-b from-[#111827] to-[#1F2937] z-50 w-64 transition-transform duration-300 transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:w-20'
         } md:static md:flex-shrink-0`}
         role="navigation"
@@ -320,7 +321,7 @@ export default function DashboardLayout({
                   <Link 
                     key={item.name}
                     href={item.href}
-                    className={`flex items-center py-2 px-3 rounded-md transition-colors ${
+                    className={`flex items-center py-2 px-3 rounded-md transition-all duration-200 ease-in-out ${
                       isActive 
                         ? 'bg-[#8B5CF6] text-white' 
                         : 'text-gray-300 hover:bg-[#1F2937] hover:text-white'
@@ -378,12 +379,12 @@ export default function DashboardLayout({
 
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
         {/* Header */}
-        <header className="bg-[#111827] shadow-md sticky top-0 z-40">
+        <header className="bg-gradient-to-r from-[#111827] to-[#1F2937] shadow-lg sticky top-0 z-40">
           <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div className="flex-1 flex items-center">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-gray-400 hover:text-white focus:outline-none focus:text-white"
+                className="text-gray-400 hover:text-white focus:outline-none focus:text-white transition-colors duration-200"
                 aria-expanded={sidebarOpen}
                 aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
                 aria-controls="main-sidebar"
@@ -400,7 +401,7 @@ export default function DashboardLayout({
               {/* Notifications */}
               <div className="relative">
                 <button 
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-400 hover:text-white transition-colors duration-200"
                   onClick={() => setNotificationsOpen(true)}
                   aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
                   aria-haspopup="dialog"
@@ -440,7 +441,7 @@ export default function DashboardLayout({
               {/* Sign Out Button (Desktop) */}
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
-                className="bg-[#8B5CF6] hover:bg-opacity-90 transition px-3 py-1 rounded text-sm hidden md:block"
+                className="bg-[#8B5CF6] hover:bg-opacity-90 transition px-3 py-1 rounded text-sm shadow-lg"
                 aria-label="Sign out"
               >
                 Sign Out
@@ -469,4 +470,12 @@ export default function DashboardLayout({
       </div>
     </div>
   );
-} 
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <DashboardContent>{children}</DashboardContent>
+    </QueryClientProvider>
+  );
+}
