@@ -72,6 +72,9 @@ const handler = NextAuth({
   ],
   session: {
     strategy: "jwt",
+    // Proper session management: sessions last for 30 days and update every 24 hours
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+    updateAge: 24 * 60 * 60    // 24 hours in seconds
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -83,14 +86,20 @@ const handler = NextAuth({
     async session({ session, token }) {
       if (token && session.user) {
         session.user.role = token.role as string;
+        // Include session expiry info for extra client-side security awareness
+        session.expires = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)).toISOString();
       }
       return session;
     }
   },
   pages: {
     signIn: "/login",
+    // Define custom page for password recovery/reset
+    // (A separate reset-password route handles the actual flow)
+    newUser: "/reset-password",
+    error: "/login"
   },
   secret: process.env.NEXTAUTH_SECRET || "fallback-secret-for-development-only",
 });
 
-export { handler as GET, handler as POST }; 
+export { handler as GET, handler as POST };

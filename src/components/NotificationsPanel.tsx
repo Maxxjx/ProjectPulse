@@ -157,21 +157,20 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
   if (!isOpen) return null;
   
   return (
-    <div 
-      className="fixed inset-0 z-50 bg-black/30 flex justify-end"
-      aria-modal="true"
+    <section
+      id="notifications-panel"
       role="dialog"
+      aria-modal="true"
       aria-labelledby="notifications-title"
+      className="fixed inset-0 z-50 bg-black/30 flex justify-end"
     >
       <div 
         ref={panelRef}
-        id="notifications-panel"
         className="w-full max-w-md h-full bg-[#111827] shadow-xl flex flex-col overflow-hidden transition-transform duration-300 ease-in-out transform"
         style={{ maxHeight: '100vh' }}
         tabIndex={-1}
-        aria-live="polite"
       >
-        <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+        <header className="p-4 border-b border-gray-700 flex justify-between items-center">
           <h2 id="notifications-title" className="text-lg font-medium">Notifications</h2>
           <div className="flex items-center gap-2">
             {notifications?.some(n => !n.isRead) && (
@@ -194,7 +193,7 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
               </svg>
             </button>
           </div>
-        </div>
+        </header>
         
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {isLoading ? (
@@ -225,71 +224,50 @@ export default function NotificationsPanel({ isOpen, onClose }: NotificationsPan
               <p className="text-sm text-gray-500 mt-1">You're all caught up!</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-700" role="list" aria-label="Notifications list">
+            <ul role="list" aria-label="Notifications list">
               {notifications?.map((notification) => (
-                <Link
-                  key={notification.id}
-                  href={getNotificationLink(notification)}
-                  className={`block p-4 hover:bg-[#1F2937] active:bg-[#1F2937]/70 transition-colors ${
-                    !notification.isRead ? 'bg-[#1F2937]/50' : ''
-                  }`}
-                  onClick={() => handleNotificationClick(notification)}
-                  role="listitem"
-                  aria-labelledby={`notification-title-${notification.id}`}
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleNotificationClick(notification);
-                    }
-                  }}
-                >
-                  <div className="flex items-start">
-                    <div className="mr-3 flex-shrink-0" aria-hidden="true">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 
-                          id={`notification-title-${notification.id}`}
-                          className={`text-sm font-medium truncate ${!notification.isRead ? 'text-white' : 'text-gray-300'}`}
-                        >
-                          {notification.title}
-                        </h3>
-                        {!notification.isRead && (
-                          <span 
-                            className="inline-block w-2 h-2 bg-[#8B5CF6] rounded-full ml-2 flex-shrink-0" 
-                            aria-label="Unread"
-                          ></span>
-                        )}
+                <li key={notification.id}>
+                  <button 
+                    onClick={() => handleNotificationClick(notification)}
+                    aria-labelledby={`notification-title-${notification.id}`}
+                    className={`block p-4 hover:bg-[#1F2937] focus:bg-[#283548] active:bg-[#1F2937]/70 transition-colors ${!notification.isRead ? 'bg-[#1F2937]/50' : ''}`}
+                  >
+                    <div className="flex items-center">
+                      <div className="mr-3 flex-shrink-0" aria-hidden="true">
+                        {getNotificationIcon(notification.type)}
                       </div>
-                      <p className="text-sm text-gray-400 mb-1 line-clamp-2">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {formatRelativeTime(notification.createdAt)}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <h3 id={`notification-title-${notification.id}`} className="text-sm font-medium truncate">
+                          {notification.title}
+                          {!notification.isRead && (
+                            <span className="inline-block w-2 h-2 bg-[#8B5CF6] rounded-full ml-2" aria-label="Unread"></span>
+                          )}
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {notification.message}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </Link>
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </div>
         
         {/* Bottom action bar - Mobile only */}
         {notifications && notifications.length > 0 && (
-          <div className="p-3 border-t border-gray-700 sm:hidden">
+          <footer className="p-4 border-t border-gray-700">
             <Link
               href="/dashboard/notifications"
-              className="w-full py-2 px-4 bg-[#1F2937] hover:bg-[#283548] rounded-md text-center block"
+              className="w-full py-2 px-4 bg-[#1F2937] hover:bg-[#283548] focus:bg-[#283548] rounded-md text-center block transition-colors"
               onClick={onClose}
             >
               View all notifications
             </Link>
-          </div>
+          </footer>
         )}
       </div>
-    </div>
+    </section>
   );
-} 
+}

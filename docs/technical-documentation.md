@@ -133,3 +133,22 @@ TASK_001: "Invalid task status"
 - API route caching
 - Static page generation where possible
 - Code splitting and lazy loading
+
+## Endpoint Implementation and Feature Rollout
+
+### API Endpoints
+- /api/auth – handles authentication (login, register, logout)
+- /api/projects – supports project CRUD operations
+- /api/tasks – for task management
+- /api/analytics – provides real-time dashboard metrics
+- /api/users – for user management
+
+Endpoints start with mock data. Set the environment variable USE_PRISMA to 'true' to switch to a Prisma-backed database.
+
+### Real-Time Features
+Real-time dashboard updates are enabled via Socket.IO. Toggle the functionality using the ENABLE_REALTIME environment variable.
+
+### Feature Flags and Rollout Strategy
+- USE_PRISMA: Switch between mock data and a live database using Prisma.
+- ENABLE_REALTIME: Enable WebSocket-based real-time updates.
+- Rollout Strategy: New features are introduced incrementally during beta testing. User feedback and monitoring guide the gradual rollout of enhanced capabilities.

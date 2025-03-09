@@ -24,10 +24,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   
+  // (Ensure role-based rules remain enforced by checking session data in your dashboard pages)
+  // For example, you can later extend this middleware to validate token.role before allowing access.
+  
   return NextResponse.next();
 }
 
 // Apply the middleware to specific paths
 export const config = {
   matcher: ['/', '/login', '/dashboard/:path*'],
-}; 
+};

@@ -73,6 +73,22 @@ ProjectPulse is developed as a comprehensive solution to streamline project mana
 
 4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
+## API Endpoints & Real-Time Features
+
+- Authentication: /api/auth
+- Projects: /api/projects
+- Tasks: /api/tasks
+- Analytics: /api/analytics
+- Users: /api/users
+
+### Feature Flags
+Set the following environment variables to control features:
+- USE_PRISMA: Switch between mock data and Prisma for the database.
+- ENABLE_REALTIME: Enable real-time updates via Socket.IO.
+
+### Feature Rollout Strategy
+Features are released incrementally. Initial beta testing with the feature flags enabled guides the final roll-out, ensuring stability and gathering user feedback before full-scale deployment.
+
 ## Future Enhancements
 
 - **Full API Integration:** Transition from mock services to live database operations using Prisma.
