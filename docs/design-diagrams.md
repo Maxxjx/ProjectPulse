@@ -12,6 +12,17 @@ graph TD
     Auth --> DB
 ```
 
+## System Architecture Diagram
+```mermaid
+graph TD
+    C[Client Browser] --> F[Next.js Frontend]
+    F --> A[App Router]
+    A -->|API Calls| B[API Routes]
+    B -->|CRUD| D[(Database)]
+    B -->|Auth| E[Auth Service]
+    E --> D
+```
+
 ## Database Schema
 ```mermaid
 erDiagram

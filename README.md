@@ -73,6 +73,27 @@ ProjectPulse is developed as a comprehensive solution to streamline project mana
 
 4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
+## Developer Setup & Deployment Guides
+
+### Local Development Setup
+1. Clone the repository.
+2. Install dependencies: `npm install`
+3. Set up environment variables in a `.env.local` file:
+   ```
+   DATABASE_URL=your_database_connection_string
+   NEXTAUTH_SECRET=your_secret_here
+   NEXTAUTH_URL=your_dev_url
+   USE_PRISMA=true
+   ENABLE_REALTIME=false
+   ```
+4. Run database migrations (if using Prisma): `npx prisma migrate dev`
+5. Start the development server: `npm run dev`
+
+### Deployment
+- CI/CD: Configure GitHub Actions to run tests and deploy on Vercel.
+- Environment-specific configurations are set via Vercel’s dashboard.
+- Ensure USE_PRISMA is set to 'true' when migrating from mock data to a live database.
+
 ## API Endpoints & Real-Time Features
 
 - Authentication: /api/auth

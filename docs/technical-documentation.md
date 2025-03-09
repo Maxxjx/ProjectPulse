@@ -152,3 +152,68 @@ Real-time dashboard updates are enabled via Socket.IO. Toggle the functionality 
 - USE_PRISMA: Switch between mock data and a live database using Prisma.
 - ENABLE_REALTIME: Enable WebSocket-based real-time updates.
 - Rollout Strategy: New features are introduced incrementally during beta testing. User feedback and monitoring guide the gradual rollout of enhanced capabilities.
+
+## Detailed API Documentation
+
+### Authentication Endpoints
+
+#### POST `/api/auth/login`
+- Request Body:  
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "string"
+  }
+  ```
+- Success Response:
+  ```json
+  {
+    "token": "JWT_TOKEN_HERE",
+    "user": {
+      "id": "string",
+      "name": "string",
+      "role": "ADMIN | TEAM | CLIENT"
+    }
+  }
+  ```
+- Error Handling:  
+  If credentials are invalid, return status 401 with:
+  ```json
+  { "error": { "code": "AUTH_001", "message": "Invalid credentials" } }
+  ```
+
+#### POST `/api/auth/register`
+- Request Body:  
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "string",
+    "name": "string",
+    "role": "TEAM | CLIENT"
+  }
+  ```
+- Success Response:
+  ```json
+  { "success": true, "userId": "string", "message": "Registration successful" }
+  ```
+- Error Handling:  
+  Duplicate email or validation error will return status 400 with descriptive error messages.
+
+### User Endpoints
+
+#### GET `/api/users`
+- Description: Retrieve all users.
+- Response:
+  ```json
+  [ { "id": "string", "name": "string", "email": "string", "role": "string" }, ... ]
+  ```
+
+#### PATCH `/api/users/:id`
+- Description: Update user details.
+- Request Body (partial update supported):
+  ```json
+  { "name": "optional string", "email": "optional email", ... }
+  ```
+- Response: Updated user object.
+
+// ...similar details for projects, tasks, analytics endpoints...

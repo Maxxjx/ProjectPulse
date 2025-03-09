@@ -281,9 +281,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       
       {/* Sidebar */}
       <aside 
-        className={`fixed inset-y-0 left-0 bg-gradient-to-b from-[#111827] to-[#1F2937] z-50 w-64 transition-transform duration-300 transform ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:w-20'
-        } md:static md:flex-shrink-0`}
+        className="fixed inset-y-0 left-0 bg-gradient-to-b from-[#111827] to-[#1F2937] z-50 w-64 transition-transform duration-300 transform"
         role="navigation"
         aria-label="Main Navigation"
       >

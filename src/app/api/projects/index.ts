@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { projectService } from '@/lib/data/mockDataService';
 import { z } from 'zod';
-// Optional Prisma integration (ensure /lib/prisma exists)
-// import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -21,14 +20,9 @@ const createProjectSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    if (process.env.USE_PRISMA === 'true') {
-      // const projects = await prisma.project.findMany();
-      // ...existing code...
-      return NextResponse.json({ projects: [] }); // Placeholder using Prisma
-    } else {
-      const projects = projectService.getProjects();
-      return NextResponse.json({ projects });
-    }
+    // Use Prisma to fetch projects from the real database
+    const projects = await prisma.project.findMany();
+    return NextResponse.json({ projects });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
   }
@@ -45,14 +39,8 @@ export async function POST(request: NextRequest) {
       );
     }
     const { creatorId, creatorName, ...projectData } = body;
-    let newProject;
-    if (process.env.USE_PRISMA === 'true') {
-      // newProject = await prisma.project.create({ data: projectData });
-      // ...existing code...
-      newProject = {}; // Placeholder using Prisma
-    } else {
-      newProject = projectService.createProject(projectData, creatorId || '1', creatorName || 'Admin User');
-    }
+    // Create new project using Prisma
+    const newProject = await prisma.project.create({ data: projectData });
     return NextResponse.json({ project: newProject }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });

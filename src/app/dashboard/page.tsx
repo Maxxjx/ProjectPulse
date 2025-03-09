@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSummaryAnalytics, useRecentActivity } from '@/lib/hooks/useAnalytics';
+import ErrorBoundary from '@/components/ErrorBoundary'; // new import
 
 // Dashboard components
 const AdminDashboard = () => {
@@ -12,9 +13,9 @@ const AdminDashboard = () => {
   const { data: recentActivity, isLoading: isLoadingActivity } = useRecentActivity(5);
 
   return (
-    <div>
+    <main role="main" aria-label="Admin Dashboard">
       {isLoadingAnalytics ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" aria-label="Loading dashboard metrics">
           {[1, 2, 3].map(i => (
             <div key={i} className="bg-[#111827] rounded-lg p-6 animate-pulse">
               <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
@@ -22,10 +23,10 @@ const AdminDashboard = () => {
               <div className="h-4 bg-gray-700 rounded w-2/3"></div>
             </div>
           ))}
-        </div>
+        </section>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-[#111827] rounded-lg p-6">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" aria-label="Dashboard metrics">
+          <article className="bg-[#111827] rounded-lg p-6 focus-within:ring-2 focus-within:ring-[#8B5CF6] hover:bg-[#1F2937] transition-colors">
             <h2 className="font-semibold text-xl mb-2">Projects</h2>
             <div className="flex justify-between items-center">
               <span className="text-3xl font-bold">{analytics?.projects.total || 0}</span>
@@ -36,17 +37,24 @@ const AdminDashboard = () => {
             <div className="mt-4">
               <Link 
                 href="/dashboard/projects" 
-                className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm flex items-center"
+                className="text-[#8B5CF6] hover:text-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] rounded-md py-1 px-2 -ml-2 text-sm flex items-center transition-colors"
+                aria-label="View all projects"
               >
                 View all projects
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-4 w-4 ml-1" 
+                  viewBox="0 0 20 20" 
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
               </Link>
             </div>
-          </div>
+          </article>
           
-          <div className="bg-[#111827] rounded-lg p-6">
+          <article className="bg-[#111827] rounded-lg p-6 focus-within:ring-2 focus-within:ring-[#8B5CF6] hover:bg-[#1F2937] transition-colors">
             <h2 className="font-semibold text-xl mb-2">Users</h2>
             <div className="flex justify-between items-center">
               <span className="text-3xl font-bold">{analytics?.users.total || 0}</span>
@@ -57,17 +65,24 @@ const AdminDashboard = () => {
             <div className="mt-4">
               <Link 
                 href="/dashboard/users" 
-                className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm flex items-center"
+                className="text-[#8B5CF6] hover:text-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] rounded-md py-1 px-2 -ml-2 text-sm flex items-center transition-colors"
+                aria-label="Manage users"
               >
                 Manage users
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-4 w-4 ml-1" 
+                  viewBox="0 0 20 20" 
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
               </Link>
             </div>
-          </div>
+          </article>
           
-          <div className="bg-[#111827] rounded-lg p-6">
+          <article className="bg-[#111827] rounded-lg p-6 focus-within:ring-2 focus-within:ring-[#8B5CF6] hover:bg-[#1F2937] transition-colors">
             <h2 className="font-semibold text-xl mb-2">Budget</h2>
             <div className="flex justify-between items-center">
               <span className="text-3xl font-bold">${(analytics?.budget.total || 0).toLocaleString()}</span>
@@ -78,24 +93,31 @@ const AdminDashboard = () => {
             <div className="mt-4">
               <Link 
                 href="/dashboard/analytics" 
-                className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm flex items-center"
+                className="text-[#8B5CF6] hover:text-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] rounded-md py-1 px-2 -ml-2 text-sm flex items-center transition-colors"
+                aria-label="View reports"
               >
                 View reports
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-4 w-4 ml-1" 
+                  viewBox="0 0 20 20" 
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
               </Link>
             </div>
-          </div>
-        </div>
+          </article>
+        </section>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[#111827] rounded-lg p-6">
-          <h2 className="font-semibold text-xl mb-4">Recent Activity</h2>
+        <section className="bg-[#111827] rounded-lg p-6" aria-labelledby="recent-activity-heading">
+          <h2 id="recent-activity-heading" className="font-semibold text-xl mb-4">Recent Activity</h2>
           
           {isLoadingActivity ? (
-            <div className="space-y-4">
+            <div className="space-y-4" aria-label="Loading recent activities">
               {[1, 2, 3, 4].map(i => (
                 <div key={i} className="flex items-start animate-pulse">
                   <div className="w-8 h-8 rounded-full bg-gray-700 mr-3"></div>
@@ -107,52 +129,67 @@ const AdminDashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4" role="feed" aria-busy="false">
               {recentActivity && recentActivity.length > 0 ? (
-                recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm mr-3 ${
-                      activity.action === 'created' ? 'bg-green-500' : 
-                      activity.action === 'updated' ? 'bg-blue-500' : 
-                      activity.action === 'deleted' ? 'bg-red-500' :
-                      activity.action === 'completed' ? 'bg-purple-500' : 'bg-gray-500'
-                    }`}>
+                recentActivity.map((activity: any) => (
+                  <article 
+                    key={activity.id} 
+                    className="flex items-start"
+                    aria-label={`${activity.userName} ${activity.action} ${activity.entityType} ${activity.entityName}`}
+                  >
+                    <div 
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm mr-3 ${
+                        activity.action === 'created' ? 'bg-green-500' : 
+                        activity.action === 'updated' ? 'bg-blue-500' : 
+                        activity.action === 'deleted' ? 'bg-red-500' :
+                        activity.action === 'completed' ? 'bg-purple-500' : 'bg-gray-500'
+                      }`}
+                      aria-hidden="true"
+                    >
                       {activity.userName.charAt(0)}
                     </div>
                     <div>
                       <p className="text-sm">
+                        <span className="sr-only">Activity:</span>
                         {activity.userName} {activity.action} {activity.entityType} 
                         <span className="text-[#8B5CF6]"> {activity.entityName}</span>
                         {activity.projectName && (
-                          <span className="text-gray-400"> in project </span>
-                        )}
-                        {activity.projectName && (
-                          <span className="text-[#8B5CF6]">{activity.projectName}</span>
+                          <>
+                            <span className="text-gray-400"> in project </span>
+                            <span className="text-[#8B5CF6]">{activity.projectName}</span>
+                          </>
                         )}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <time dateTime={activity.timestamp} className="text-xs text-gray-400">
                         {new Date(activity.timestamp).toLocaleString()}
-                      </p>
+                      </time>
                     </div>
-                  </div>
+                  </article>
                 ))
               ) : (
-                <p className="text-gray-400">No recent activity.</p>
+                <p className="text-gray-400" role="status">No recent activity.</p>
               )}
             </div>
           )}
           
           <div className="mt-4 text-center">
-            <Link href="/dashboard/activity" className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm">
+            <Link 
+              href="/dashboard/activity" 
+              className="text-[#8B5CF6] hover:text-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] rounded-md py-1 px-2 text-sm inline-block transition-colors"
+              aria-label="View all activity"
+            >
               View all activity
             </Link>
           </div>
-        </div>
+        </section>
         
-        <div className="bg-[#111827] rounded-lg p-6">
+        <section className="bg-[#111827] rounded-lg p-6" aria-labelledby="tasks-overview-heading">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="font-semibold text-xl">Tasks Overview</h2>
-            <select className="bg-[#1F2937] border border-gray-600 rounded text-sm px-2 py-1">
+            <h2 id="tasks-overview-heading" className="font-semibold text-xl">Tasks Overview</h2>
+            <select 
+              className="bg-[#1F2937] border border-gray-600 rounded text-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
+              aria-label="Filter tasks"
+            >
               <option>All Tasks</option>
               <option>Overdue</option>
               <option>Completed</option>
@@ -233,14 +270,15 @@ const AdminDashboard = () => {
           <div className="mt-4 text-center">
             <Link 
               href="/dashboard/tasks" 
-              className="text-[#8B5CF6] hover:text-[#a78bfa] text-sm"
+              className="text-[#8B5CF6] hover:text-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] rounded-md py-1 px-2 text-sm inline-block transition-colors"
+              aria-label="View all tasks"
             >
               View all tasks
             </Link>
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
 
@@ -677,5 +715,9 @@ export default function DashboardHomeView() {
     );
   }
 
-  return <>{renderDashboard()}</>;
-} 
+  return (
+    <ErrorBoundary>
+      {renderDashboard()}
+    </ErrorBoundary>
+  );
+}

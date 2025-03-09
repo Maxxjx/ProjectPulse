@@ -32,6 +32,13 @@
 
 [Screenshot: Role Management Interface]
 
+1. **User Management**  
+   - Access Users via Dashboard → Users  
+   - Add/Edit/Delete users with role assignment  
+   - Monitor audit logs for system activity.
+2. **Analytics & Reports**  
+   - View system metrics and generate custom reports.
+
 #### 2. Analytics Dashboard
 1. Real-time Metrics
    - Active users
@@ -65,11 +72,24 @@
    - Share documents: Project → Documents
    - View team calendar: Dashboard → Calendar
 
+1. **Task Management**  
+   - View assigned tasks in the dashboard  
+   - Update task statuses and log time entries.
+2. **Collaboration**  
+   - Comment on tasks and share documents  
+   - Use calendar view for scheduling.
+
 ### For Clients
 1. **Project Tracking**
    - View project progress: Dashboard → Projects
    - Access reports: Reports → Generate
    - Submit feedback: Project → Feedback
+
+1. **Project Tracking**  
+   - Monitor project progress and budget details  
+   - View project-specific updates and upcoming deadlines.
+2. **Feedback Submission**  
+   - Submit questions or feedback through the support channel.
 
 ## Common Features
 - **Dashboard Navigation**
