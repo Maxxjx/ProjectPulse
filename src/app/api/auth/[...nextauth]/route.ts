@@ -1,10 +1,12 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { compare, hash } from "bcryptjs";
-import { JWT } from "jsonwebtoken";
+import { compare } from "bcryptjs";
+import { prisma } from "@/lib/prisma";
+import { testDatabaseConnection } from "@/lib/prisma";
+import { userService } from "@/lib/data/dataService";
 
-// For simplicity in the demo, using clear text passwords that match the login form
-const users = [
+// For fallback if database is not available
+const mockUsers = [
   {
     id: "1",
     name: "Demo User",
@@ -40,7 +42,7 @@ const handler = NextAuth({
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
@@ -48,58 +50,91 @@ const handler = NextAuth({
           return null;
         }
 
-        const user = users.find(user => user.email === credentials.email);
-        
-        if (!user) {
-          return null;
+        try {
+          // Check if database is available
+          const isDbConnected = await testDatabaseConnection();
+          
+          if (isDbConnected) {
+            // Use database for authentication
+            const user = await prisma.user.findUnique({
+              where: { email: credentials.email }
+            });
+            
+            if (!user || !user.password) {
+              return null;
+            }
+            
+            const isPasswordValid = await compare(credentials.password, user.password);
+            
+            if (!isPasswordValid) {
+              return null;
+            }
+            
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role
+            };
+          } else {
+            // Use mock users as fallback
+            const user = mockUsers.find(user => user.email === credentials.email);
+            
+            if (!user || user.password !== credentials.password) {
+              return null;
+            }
+            
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role
+            };
+          }
+        } catch (error) {
+          console.error("Authentication error:", error);
+          // Use mock users as fallback if there's an error
+          const user = mockUsers.find(user => user.email === credentials.email);
+          
+          if (!user || user.password !== credentials.password) {
+            return null;
+          }
+          
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          };
         }
-
-        // For demo purposes, directly compare passwords instead of hashing
-        const isPasswordValid = user.password === credentials.password;
-
-        if (!isPasswordValid) {
-          return null;
-        }
-
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        };
       }
     })
   ],
-  session: {
-    strategy: "jwt",
-    // Proper session management: sessions last for 30 days and update every 24 hours
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
-    updateAge: 24 * 60 * 60    // 24 hours in seconds
-  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
+        token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
-      if (token && session.user) {
-        session.user.role = token.role as string;
-        // Include session expiry info for extra client-side security awareness
-        session.expires = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)).toISOString();
+      if (session.user) {
+        session.user.role = token.role;
+        session.user.id = token.id;
       }
       return session;
     }
   },
   pages: {
     signIn: "/login",
-    // Define custom page for password recovery/reset
-    // (A separate reset-password route handles the actual flow)
-    newUser: "/reset-password",
     error: "/login"
   },
-  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-for-development-only",
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  secret: process.env.NEXTAUTH_SECRET
 });
 
 export { handler as GET, handler as POST };

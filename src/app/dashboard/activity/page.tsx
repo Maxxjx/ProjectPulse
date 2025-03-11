@@ -9,9 +9,8 @@ export default function ActivityView() {
   const { data: session } = useSession();
   const { data: activities, isLoading } = useRecentActivity(20); // Get more activities
   const [filter, setFilter] = useState('all');
-
   // Filter activities based on selected filter
-  const filteredActivities = activities?.filter(activity => {
+  const filteredActivities = activities?.filter((activity: any) => {
     if (filter === 'all') return true;
     return activity.action === filter;
   });
@@ -51,7 +50,7 @@ export default function ActivityView() {
         ) : (
           <div className="space-y-6">
             {filteredActivities && filteredActivities.length > 0 ? (
-              filteredActivities.map((activity) => (
+              filteredActivities.map((activity :any) => (
                 <div key={activity.id} className="flex items-start border-b border-gray-700 pb-4">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm mr-4 ${
                     activity.action === 'created' ? 'bg-green-500' : 

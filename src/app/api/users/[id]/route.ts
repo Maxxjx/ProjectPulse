@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userService } from '@/lib/data/mockDataService';
+import { userService } from '@/lib/data/dataService';
 import { z } from 'zod';
 
 // Validation schema for updating a user

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { projectService } from '@/lib/data/mockDataService';
+import { projectService } from '@/lib/data/dataService';
 import { z } from 'zod';
 
 // Validation schema for creating a project
@@ -29,11 +29,11 @@ export async function GET(request: NextRequest) {
     let projects;
     
     if (clientId) {
-      projects = projectService.getProjectsByClient(clientId);
+      projects = await projectService.getProjectsByClient(clientId);
     } else if (teamMemberId) {
-      projects = projectService.getProjectsByTeamMember(teamMemberId);
+      projects = await projectService.getProjectsByTeamMember(teamMemberId);
     } else {
-      projects = projectService.getProjects();
+      projects = await projectService.getProjects();
     }
     
     return NextResponse.json({ projects }, { status: 200 });
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     
     const { creatorId: _, creatorName: __, ...projectData } = body;
     
-    const newProject = projectService.createProject(
+    const newProject = await projectService.createProject(
       projectData,
       creatorId,
       creatorName

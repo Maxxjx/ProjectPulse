@@ -612,6 +612,118 @@ export const notificationService = {
   }
 };
 
+// Time Entry Services
+export const timeEntryService = {
+  // Get all time entries
+  getTimeEntries: (): TimeEntry[] => {
+    return timeEntries.map(entry => {
+      // Find the associated task to get project info
+      const task = tasks.find(t => t.id === entry.taskId);
+      const user = users.find(u => u.id === entry.userId);
+      
+      return {
+        ...entry,
+        task: task ? {
+          title: task.title,
+          projectId: task.projectId,
+          project: projects.find(p => p.id === task.projectId)?.name || 'Unknown Project'
+        } : undefined,
+        user: user ? {
+          name: user.name,
+          position: user.position
+        } : undefined
+      };
+    });
+  },
+  
+  // Get time entries by user
+  getTimeEntriesByUserId: (userId: string): TimeEntry[] => {
+    return timeEntries
+      .filter(entry => entry.userId === userId)
+      .map(entry => {
+        // Find the associated task to get project info
+        const task = tasks.find(t => t.id === entry.taskId);
+        const user = users.find(u => u.id === entry.userId);
+        
+        return {
+          ...entry,
+          task: task ? {
+            title: task.title,
+            projectId: task.projectId,
+            project: projects.find(p => p.id === task.projectId)?.name || 'Unknown Project'
+          } : undefined,
+          user: user ? {
+            name: user.name,
+            position: user.position
+          } : undefined
+        };
+      });
+  },
+  
+  // Get time entries by task
+  getTimeEntriesByTaskId: (taskId: string): TimeEntry[] => {
+    return timeEntries
+      .filter(entry => entry.taskId === taskId)
+      .map(entry => {
+        // Find the associated task to get project info
+        const task = tasks.find(t => t.id === entry.taskId);
+        const user = users.find(u => u.id === entry.userId);
+        
+        return {
+          ...entry,
+          task: task ? {
+            title: task.title,
+            projectId: task.projectId,
+            project: projects.find(p => p.id === task.projectId)?.name || 'Unknown Project'
+          } : undefined,
+          user: user ? {
+            name: user.name,
+            position: user.position
+          } : undefined
+        };
+      });
+  },
+  
+  // Create a new time entry
+  createTimeEntry: (entry: Omit<TimeEntry, 'id'>): TimeEntry => {
+    const newEntry = {
+      id: `te_${timeEntries.length + 1}`,
+      ...entry
+    };
+    
+    timeEntries.push(newEntry);
+    
+    return newEntry;
+  },
+  
+  // Update a time entry
+  updateTimeEntry: (id: string, updates: Partial<TimeEntry>): TimeEntry | null => {
+    const entryIndex = timeEntries.findIndex(e => e.id === id);
+    
+    if (entryIndex === -1) return null;
+    
+    const updatedEntry = {
+      ...timeEntries[entryIndex],
+      ...updates
+    };
+    
+    timeEntries[entryIndex] = updatedEntry;
+    
+    return updatedEntry;
+  },
+  
+  // Delete a time entry
+  deleteTimeEntry: (id: string): boolean => {
+    const entryIndex = timeEntries.findIndex(e => e.id === id);
+    
+    if (entryIndex === -1) return false;
+    
+    timeEntries.splice(entryIndex, 1);
+    
+    return true;
+  }
+};
+
 // Activity Log Services
 export const activityService = {
   // Get recent activity

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userService } from '@/lib/data/mockDataService';
+import { userService } from '@/lib/data/dataService';
 import { z } from 'zod';
 
 // Validation schema for creating a user
@@ -16,7 +16,7 @@ const createUserSchema = z.object({
 // GET all users
 export async function GET(request: NextRequest) {
   try {
-    const users = userService.getUsers();
+    const users = await userService.getUsers();
     return NextResponse.json({ users }, { status: 200 });
   } catch (error) {
     console.error('Error in GET /api/users:', error);
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if user with email already exists
-    const existingUser = userService.getUserByEmail(body.email);
+    const existingUser = await userService.getUserByEmail(body.email);
     if (existingUser) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const newUser = userService.createUser(body);
+    const newUser = await userService.createUser(body);
     
     return NextResponse.json({ user: newUser }, { status: 201 });
   } catch (error) {

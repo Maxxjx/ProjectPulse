@@ -1,39 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { taskService } from '@/lib/data/mockDataService';
+import { taskService } from '@/lib/data/dataService';
 import { z } from 'zod';
 
 // Validation schema for creating a task
 const createTaskSchema = z.object({
-  title: z.string().min(1, 'Task title is required'),
+  title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
   status: z.string(),
   priority: z.string(),
   projectId: z.number(),
-  project: z.string(),
   assigneeId: z.string().optional(),
-  assignee: z.string(),
   deadline: z.string(),
   estimatedHours: z.number().optional(),
-  actualHours: z.number().optional(),
   tags: z.array(z.string()).optional(),
 });
 
-// GET all tasks with optional filtering
+// GET all tasks or filter by query params
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
     const projectId = searchParams.get('projectId');
     const assigneeId = searchParams.get('assigneeId');
+    const status = searchParams.get('status');
     
     let tasks;
     
     if (projectId) {
-      tasks = taskService.getTasksByProject(parseInt(projectId));
+      tasks = await taskService.getTasksByProject(parseInt(projectId));
     } else if (assigneeId) {
-      tasks = taskService.getTasksByAssignee(assigneeId);
+      tasks = await taskService.getTasksByAssignee(assigneeId);
+    } else if (status) {
+      tasks = await taskService.getTasksByStatus(status);
     } else {
-      tasks = taskService.getTasks();
+      tasks = await taskService.getTasks();
     }
     
     return NextResponse.json({ tasks }, { status: 200 });
@@ -63,27 +63,10 @@ export async function POST(request: NextRequest) {
     
     // Extract user info from request (in a real app, this would come from auth)
     const creatorId = body.creatorId || '1'; // Default to admin if not provided
-    const creatorName = body.creatorName || 'Admin User';
     
-    const newTask = taskService.createTask(
-      {
-        title: body.title,
-        description: body.description,
-        status: body.status,
-        priority: body.priority,
-        projectId: body.projectId,
-        project: body.project,
-        assigneeId: body.assigneeId,
-        assignee: body.assignee,
-        deadline: body.deadline,
-        estimatedHours: body.estimatedHours,
-        actualHours: body.actualHours || 0,
-        tags: body.tags || [],
-        createdBy: creatorName,
-      },
-      creatorId,
-      creatorName
-    );
+    const { creatorId: _, ...taskData } = body;
+    
+    const newTask = await taskService.createTask(taskData, creatorId);
     
     return NextResponse.json({ task: newTask }, { status: 201 });
   } catch (error) {
