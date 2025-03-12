@@ -144,9 +144,9 @@ erDiagram
    - Screen reader optimization
 
 10. **Responsive Design**
-    - Mobile-first approach
-    - Adaptive layouts
-    - Touch-friendly interactions
+   - Mobile-first approach
+   - Adaptive layouts
+   - Touch-friendly interactions
 
 ### 3.2 UI/UX Implementation
 - Component Library: Shadcn/ui with custom dark theme
