@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSummaryAnalytics, useRecentActivity } from '@/lib/hooks/useAnalytics';
 import ErrorBoundary from '@/components/ErrorBoundary'; // new import
+import DashboardCharts from '@/components/dashboard/DashboardCharts'; // Add import for charts
 
 // Dashboard components
 const AdminDashboard = () => {
@@ -48,7 +49,11 @@ const AdminDashboard = () => {
                   fill="currentColor"
                   aria-hidden="true"
                 >
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  <path 
+                    fillRule="evenodd" 
+                    d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" 
+                    clipRule="evenodd" 
+                  />
                 </svg>
               </Link>
             </div>
@@ -111,6 +116,13 @@ const AdminDashboard = () => {
           </article>
         </section>
       )}
+
+      {/* Charts Section */}
+      <ErrorBoundary fallback={<div className="text-red-500">Error loading charts</div>}>
+        <section className="mb-8">
+          <DashboardCharts />
+        </section>
+      </ErrorBoundary>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section className="bg-[#111827] rounded-lg p-6" aria-labelledby="recent-activity-heading">

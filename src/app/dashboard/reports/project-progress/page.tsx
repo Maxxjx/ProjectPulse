@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { DataServiceInstance } from '@/lib/data-service';
+import { ProjectProgressChart, BudgetComparisonChart } from '@/components/charts';
 
 interface Project {
   id: string;
@@ -68,6 +69,17 @@ export default function ProjectProgressReport() {
     
     fetchData();
   }, []);
+
+  // Modified to prepare data for chart
+  const prepareChartData = () => {
+    return {
+      projects: filteredProjects.map(project => ({
+        name: project.name,
+        progress: project.progress,
+        status: project.status
+      }))
+    };
+  };
   
   // Filter projects based on selected options
   const filteredProjects = projects.filter(project => {
@@ -234,6 +246,18 @@ export default function ProjectProgressReport() {
           </div>
         </div>
       </div>
+      
+      {/* Project Progress Chart */}
+      {!loading && filteredProjects.length > 0 && (
+        <div className="bg-[#111827] rounded-lg p-4 mb-6">
+          <ProjectProgressChart 
+            data={prepareChartData()} 
+            height={300}
+            title="Project Progress Overview"
+            className="mt-4"
+          />
+        </div>
+      )}
       
       {/* Projects List */}
       {loading ? (

@@ -24,6 +24,7 @@ Traditional project management tools often lack real-time collaboration features
 - Authentication: NextAuth.js
 - State Management: React Query
 - Real-time Features: Socket.IO
+- Data Visualization: ApexCharts
 - Testing: Jest, React Testing Library, Cypress
 
 ### 2.2 System Design
@@ -127,16 +128,25 @@ erDiagram
    - Notification system
    - Activity feed
 
-8. **Accessibility Features**
+8. **Data Visualization**
+   - Interactive charts using ApexCharts
+   - Project progress visualization
+   - Budget comparison charts
+   - Task distribution analysis
+   - Time tracking charts
+   - Team performance metrics
+   - Customizable dashboard layouts
+
+9. **Accessibility Features**
    - ARIA-compliant components
    - Semantic HTML structure
    - Keyboard navigation support
    - Screen reader optimization
 
-9. **Responsive Design**
-   - Mobile-first approach
-   - Adaptive layouts
-   - Touch-friendly interactions
+10. **Responsive Design**
+    - Mobile-first approach
+    - Adaptive layouts
+    - Touch-friendly interactions
 
 ### 3.2 UI/UX Implementation
 - Component Library: Shadcn/ui with custom dark theme
@@ -156,7 +166,25 @@ erDiagram
 ![Project Dashboard Design](/docs/WhatsApp%20Image%202025-03-05%20at%2012.54.06%20PM.jpeg)
 *Figure 1: ProjectPulse Dashboard Interface showcasing the dark theme, project metrics, and task management views*
 
-### 3.3 API Implementation
+### 3.3 Data Visualization
+The system implements a comprehensive data visualization solution using ApexCharts, providing users with intuitive, interactive charts that help make data-driven decisions. Key visualization features include:
+
+- **Interactive Charts**: All charts support hovering, zooming, and tooltips for detailed information
+- **Consistent Theming**: Dark-themed charts that seamlessly blend with the application interface
+- **Responsive Design**: Charts adapt to different screen sizes and orientations
+- **Real-time Updates**: Dynamic charts that update as data changes
+- **Export Options**: Charts can be exported as PNG or SVG for reporting
+
+Types of charts implemented:
+- Bar charts for project progress comparison
+- Donut charts for task distribution visualization
+- Area charts for time tracking trends
+- Stacked bar charts for team performance analysis
+- Line charts for budget tracking over time
+
+These visualizations are integrated into both the main dashboard and dedicated report pages, providing users with both at-a-glance insights and in-depth analytical capabilities.
+
+### 3.4 API Implementation
 The system offers comprehensive RESTful APIs for all key features:
 
 #### Authentication Endpoints
@@ -188,7 +216,7 @@ Error handling follows a standardized format:
 }
 ```
 
-### 3.4 Security Measures
+### 3.5 Security Measures
 - JWT-based authentication
 - Input sanitization
 - Rate limiting (5 req/min for auth, 100 req/min for API)
@@ -327,6 +355,7 @@ Key achievements include:
 - Real-time analytics and reporting capabilities
 - Robust security implementation
 - Collaborative features for team productivity
+- Comprehensive data visualization for informed decision-making
 
 The system has demonstrated significant improvements in team productivity and client satisfaction, validating the approach taken in its design and implementation.
 
@@ -338,6 +367,7 @@ The system has demonstrated significant improvements in team productivity and cl
 5. WCAG 2.1 Accessibility Guidelines
 6. Software Architecture Patterns (Richards, M.)
 7. Modern Web Development (Brown, S.)
+8. ApexCharts Documentation
 
 ## Appendices
 ### A. API Documentation

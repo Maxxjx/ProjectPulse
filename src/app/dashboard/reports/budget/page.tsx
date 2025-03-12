@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { DataServiceInstance } from '@/lib/data-service';
+import { BudgetComparisonChart, TeamPerformanceChart } from '@/components/charts';
 
 interface Project {
   id: string;
@@ -80,6 +81,19 @@ export default function BudgetReport() {
     
     fetchData();
   }, []);
+  
+  // Prepare chart data
+  const prepareBudgetChartData = () => {
+    const projectNames = filteredProjects.map(p => p.name);
+    const budgetData = filteredProjects.map(p => p.budget);
+    const spentData = filteredProjects.map(p => calculateLaborCost(p.id));
+
+    return {
+      categories: projectNames,
+      budget: budgetData,
+      spent: spentData
+    };
+  };
   
   // Filter projects based on selected options
   const filteredProjects = projects.filter(project => {
@@ -295,6 +309,18 @@ export default function BudgetReport() {
           <p className="text-2xl font-bold">{formatHours(totalHours)}</p>
         </div>
       </div>
+      
+      {/* Budget Chart */}
+      {!loading && filteredProjects.length > 0 && (
+        <div className="bg-[#111827] rounded-lg p-4 mb-6">
+          <BudgetComparisonChart 
+            data={prepareBudgetChartData()}
+            height={350}
+            title="Budget vs. Spent by Project"
+            className="mt-2"
+          />
+        </div>
+      )}
       
       {/* Projects Budget List */}
       {loading ? (
