@@ -51,7 +51,7 @@ export async function GET() {
     } else {
       // Use mock data service
       const users = await userService.getUsers();
-      return NextResponse.json({ users }, { status: 200 });
+    return NextResponse.json({ users }, { status: 200 });
     }
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -98,13 +98,13 @@ export async function POST(request: NextRequest) {
         where: { email },
       });
       
-      if (existingUser) {
-        return NextResponse.json(
-          { error: 'User with this email already exists' },
-          { status: 409 }
-        );
-      }
-      
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'User with this email already exists' },
+        { status: 409 }
+      );
+    }
+    
       // Create user in the database
       const user = await db.user.create({
         data: {
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Use mock data service
       const newUser = await userService.createUser({ name, email, password, role });
-      return NextResponse.json({ user: newUser }, { status: 201 });
+    return NextResponse.json({ user: newUser }, { status: 201 });
     }
   } catch (error) {
     console.error('Error in POST /api/users:', error);

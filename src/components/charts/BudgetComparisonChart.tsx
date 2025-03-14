@@ -1,123 +1,137 @@
 'use client';
 
 import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Project, TimeEntry } from '@/lib/data/types';
 import ChartWrapper from './ChartWrapper';
-import { BudgetChartData, generateRandomData } from './types';
 
 interface BudgetComparisonChartProps {
-  data?: BudgetChartData;
+  projects: Project[];
+  timeEntries?: TimeEntry[];
   height?: number;
   title?: string;
-  className?: string;
+  description?: string;
 }
 
-const BudgetComparisonChart: React.FC<BudgetComparisonChartProps> = ({ 
-  data = generateRandomData.budget(),
+export function BudgetComparisonChart({
+  projects,
+  timeEntries = [],
   height = 350,
   title = 'Budget vs. Actual Spending',
-  className = ''
-}) => {
-  const series = [
-    {
-      name: 'Budget',
-      data: data.budget
-    },
-    {
-      name: 'Spent',
-      data: data.spent
-    }
-  ];
+  description = 'Comparison of budgeted vs actual project costs'
+}: BudgetComparisonChartProps) {
+  
+  // Helper function to calculate cost based on hours spent
+  const calculateCost = (projectId: string | number): number => {
+    const projectTimeEntries = timeEntries.filter(entry => 
+      // Check for projectId (might be stored in taskId relation)
+      (entry.projectId && entry.projectId.toString() === projectId.toString()) || 
+      // If there's a task with a projectId that matches
+      (entry.task && entry.task.projectId.toString() === projectId.toString())
+    );
+    
+    // Convert minutes to hours if needed
+    const totalHours = projectTimeEntries.reduce((sum, entry) => {
+      // If hours is directly available, use it
+      if ('hours' in entry && typeof entry.hours === 'number') {
+        return sum + entry.hours;
+      }
+      // Otherwise convert minutes to hours (divide by 60)
+      return sum + ((entry.minutes || 0) / 60);
+    }, 0);
+    
+    const hourlyRate = 50; // Example hourly rate in currency units
+    return totalHours * hourlyRate;
+  };
 
-  const options: ApexCharts.ApexOptions = {
+  // Format data for chart
+  const categories = projects.map(p => p.name);
+  const budgetData = projects.map(p => p.budget || 0);
+  const spentData = projects.map(p => calculateCost(p.id));
+
+  // Chart options
+  const options = {
     chart: {
-      type: 'bar',
-      height: height,
+      type: 'bar' as const,
       stacked: false,
       toolbar: {
-        show: false
-      }
+        show: true,
+      },
     },
     plotOptions: {
       bar: {
         horizontal: false,
         columnWidth: '55%',
         borderRadius: 4,
-        endingShape: 'rounded'
-      }
+        endingShape: 'rounded',
+      },
     },
     dataLabels: {
-      enabled: false
+      enabled: false,
     },
     stroke: {
       show: true,
       width: 2,
-      colors: ['transparent']
+      colors: ['transparent'],
     },
-    colors: ['#8B5CF6', '#EC4899'],
     xaxis: {
-      categories: data.categories,
+      categories: categories,
       labels: {
         style: {
-          colors: '#94A3B8'
-        }
-      }
+          fontSize: '12px',
+        },
+      },
     },
     yaxis: {
       title: {
         text: 'Amount (₹)',
         style: {
-          color: '#94A3B8',
-          fontSize: '12px',
-          fontWeight: 400
-        }
+          fontSize: '14px',
+        },
       },
       labels: {
-        style: {
-          colors: '#94A3B8'
-        },
-        formatter: function(val) {
+        formatter: function(val: number) {
           return '₹' + (val / 1000).toFixed(0) + 'k';
-        }
-      }
+        },
+      },
     },
     fill: {
-      opacity: 0.9
+      opacity: 0.9,
     },
     tooltip: {
       y: {
-        formatter: function(val) {
+        formatter: function(val: number) {
           return '₹' + val.toLocaleString('en-IN');
-        }
-      }
+        },
+      },
     },
-    legend: {
-      position: 'top',
-      horizontalAlign: 'right',
-      offsetY: -10,
-      labels: {
-        colors: '#E5E7EB'
-      }
-    },
-    title: {
-      text: title,
-      align: 'left',
-      style: {
-        fontSize: '16px',
-        color: '#E5E7EB',
-        fontWeight: 'bold'
-      }
-    }
   };
 
-  return (
-    <ChartWrapper
-      type="bar"
-      series={series}
-      options={options}
-      height={height}
-      className={className}
-    />
-  );
-};
+  const series = [
+    {
+      name: 'Budget',
+      data: budgetData,
+    },
+    {
+      name: 'Spent',
+      data: spentData,
+    },
+  ];
 
-export default BudgetComparisonChart; 
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartWrapper 
+          type="bar"
+          series={series}
+          options={options}
+          height={height}
+        />
+      </CardContent>
+    </Card>
+  );
+}

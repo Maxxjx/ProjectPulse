@@ -1,73 +1,73 @@
+'use client';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
-import { v4 as uuidv4 } from 'uuid';
+import { TimeEntry } from '@/lib/data/types';
 
-// Time entry interface
-export interface TimeEntry {
-  id: string;
-  taskId: number;
-  userId: string;
-  description: string;
-  startTime: string;
-  endTime: string | null;
-  duration: number | null; // in seconds
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Mock time entries data
-let mockTimeEntries: TimeEntry[] = [
+// Mock time entries data as fallback
+const mockTimeEntries: TimeEntry[] = [
   {
-    id: uuidv4(),
+    id: 1,
     taskId: 1,
     userId: '1',
     description: 'Working on login form validation',
-    startTime: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), // 3 hours ago
-    endTime: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    duration: 3600, // 1 hour
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
+    minutes: 60, // 1 hour
+    date: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString().split('T')[0], // 3 hours ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString()
   },
   {
-    id: uuidv4(),
+    id: 2,
     taskId: 2,
     userId: '1',
     description: 'Setting up API routes',
-    startTime: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(), // 8 hours ago
-    endTime: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), // 6 hours ago
-    duration: 7200, // 2 hours
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString()
+    minutes: 120, // 2 hours
+    date: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString().split('T')[0], // 8 hours ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString()
   },
   {
-    id: uuidv4(),
+    id: 3,
     taskId: 3,
     userId: '2',
     description: 'Designing database schema',
-    startTime: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    endTime: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString(), // 22 hours ago
-    duration: 7200, // 2 hours
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString()
+    minutes: 120, // 2 hours
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString().split('T')[0], // 1 day ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
   }
 ];
 
+// Current active time tracking (not saved to DB yet)
+let activeTimeTracking: {
+  userId: string;
+  taskId: number;
+  description: string;
+  startTime: Date;
+} | null = null;
+
 // Get all time entries for a user
-export function useUserTimeEntries() {
+export function useUserTimeEntries(userId?: string) {
   const { data: session } = useSession();
-  const userId = session?.user?.id;
+  const currentUserId = userId || session?.user?.id;
 
   return useQuery({
-    queryKey: ['timeEntries', userId],
+    queryKey: ['timeEntries', 'user', currentUserId],
     queryFn: async () => {
-      if (!userId) return [];
+      if (!currentUserId) return [];
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      return mockTimeEntries.filter(entry => entry.userId === userId);
+      try {
+        const response = await fetch(`/api/time-entries?userId=${currentUserId}`);
+        if (!response.ok) {
+          throw new Error('API error');
+        }
+        
+        const data = await response.json();
+        return data.timeEntries;
+      } catch (error) {
+        console.warn('Falling back to mock data for time entries:', error);
+        // Fallback to mock data
+        return mockTimeEntries.filter(entry => entry.userId === currentUserId);
+      }
     },
-    enabled: !!userId,
+    enabled: !!currentUserId,
   });
 }
 
@@ -78,12 +78,47 @@ export function useTaskTimeEntries(taskId: number) {
     queryFn: async () => {
       if (!taskId) return [];
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      return mockTimeEntries.filter(entry => entry.taskId === taskId);
+      try {
+        const response = await fetch(`/api/time-entries?taskId=${taskId}`);
+        if (!response.ok) {
+          throw new Error('API error');
+        }
+        
+        const data = await response.json();
+        return data.timeEntries;
+      } catch (error) {
+        console.warn('Falling back to mock data for task time entries:', error);
+        // Fallback to mock data
+        return mockTimeEntries.filter(entry => entry.taskId === taskId);
+      }
     },
     enabled: !!taskId,
+  });
+}
+
+// Get time entries within a date range
+export function useTimeEntriesInRange(startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: ['timeEntries', 'range', startDate, endDate],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/time-entries?startDate=${startDate}&endDate=${endDate}`);
+        if (!response.ok) {
+          throw new Error('API error');
+        }
+        
+        const data = await response.json();
+        return data.timeEntries;
+      } catch (error) {
+        console.warn('Falling back to mock data for time entries in range:', error);
+        // Fallback to mock data - filter by date range
+        return mockTimeEntries.filter(entry => {
+          const entryDate = entry.date;
+          return entryDate >= startDate && entryDate <= endDate;
+        });
+      }
+    },
+    enabled: !!(startDate && endDate),
   });
 }
 
@@ -97,37 +132,24 @@ export function useStartTimeTracking() {
     mutationFn: async ({ taskId, description }: { taskId: number, description: string }) => {
       if (!userId) throw new Error('User not authenticated');
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Check if there's already an active time entry for this user
-      const activeEntry = mockTimeEntries.find(entry => entry.userId === userId && entry.endTime === null);
-      
-      if (activeEntry) {
-        throw new Error('You already have an active time entry');
+      try {
+        // Start tracking locally first
+        activeTimeTracking = {
+          userId,
+          taskId,
+          description,
+          startTime: new Date()
+        };
+        
+        // Only notify UI about time tracking starting - actual entry will be created when stopping
+        return { success: true, message: 'Time tracking started' };
+      } catch (error) {
+        console.warn('Error starting time tracking:', error);
+        throw new Error('Failed to start time tracking');
       }
-      
-      // Create new time entry
-      const newEntry: TimeEntry = {
-        id: uuidv4(),
-        taskId,
-        userId,
-        description,
-        startTime: new Date().toISOString(),
-        endTime: null,
-        duration: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      // Add to mock data
-      mockTimeEntries = [...mockTimeEntries, newEntry];
-      
-      return newEntry;
     },
-    onSuccess: (data) => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['timeEntries'] });
+    onSuccess: () => {
+      // Invalidate active time entry query
       queryClient.invalidateQueries({ queryKey: ['activeTimeEntry'] });
     },
   });
@@ -142,42 +164,99 @@ export function useStopTimeTracking() {
   return useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error('User not authenticated');
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Find active time entry
-      const activeEntryIndex = mockTimeEntries.findIndex(entry => entry.userId === userId && entry.endTime === null);
-      
-      if (activeEntryIndex === -1) {
-        throw new Error('No active time entry found');
-      }
+      if (!activeTimeTracking) throw new Error('No active time tracking');
       
       const now = new Date();
-      const startTime = new Date(mockTimeEntries[activeEntryIndex].startTime);
-      const durationInSeconds = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+      const startTime = activeTimeTracking.startTime;
+      const minutesSpent = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60));
       
-      // Update the entry
-      const updatedEntry: TimeEntry = {
-        ...mockTimeEntries[activeEntryIndex],
-        endTime: now.toISOString(),
-        duration: durationInSeconds,
-        updatedAt: now.toISOString()
-      };
-      
-      // Update in mock data
-      mockTimeEntries = [
-        ...mockTimeEntries.slice(0, activeEntryIndex),
-        updatedEntry,
-        ...mockTimeEntries.slice(activeEntryIndex + 1)
-      ];
-      
-      return updatedEntry;
+      try {
+        const response = await fetch('/api/time-entries', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            taskId: activeTimeTracking.taskId,
+            userId: activeTimeTracking.userId,
+            description: activeTimeTracking.description,
+            minutes: minutesSpent,
+            date: startTime.toISOString().split('T')[0]
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('API error');
+        }
+        
+        const data = await response.json();
+        activeTimeTracking = null; // Clear active tracking
+        return data.timeEntry;
+      } catch (error) {
+        console.warn('Falling back to mock for stopping time tracking:', error);
+        
+        // Create a new time entry from the active tracking (using non-null assertion because we checked above)
+        const newEntry: TimeEntry = {
+          id: mockTimeEntries.length > 0 ? Math.max(...mockTimeEntries.map(entry => entry.id)) + 1 : 1,
+          taskId: activeTimeTracking!.taskId,
+          userId: activeTimeTracking!.userId,
+          description: activeTimeTracking!.description,
+          minutes: minutesSpent,
+          date: startTime.toISOString().split('T')[0],
+          createdAt: new Date().toISOString()
+        };
+        
+        // Add to mock data
+        mockTimeEntries.push(newEntry);
+        
+        // Clear active tracking
+        activeTimeTracking = null;
+        
+        return newEntry;
+      }
     },
     onSuccess: () => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['timeEntries'] });
       queryClient.invalidateQueries({ queryKey: ['activeTimeEntry'] });
+    },
+  });
+}
+
+// Delete a time entry
+export function useDeleteTimeEntry() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (timeEntryId: number) => {
+      try {
+        const response = await fetch(`/api/time-entries/${timeEntryId}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          throw new Error('API error');
+        }
+        
+        return { id: timeEntryId };
+      } catch (error) {
+        console.warn('Falling back to mock for deleting time entry:', error);
+        // Fallback to mock implementation
+        const entryIndex = mockTimeEntries.findIndex(entry => entry.id === timeEntryId);
+        
+        if (entryIndex === -1) {
+          throw new Error('Time entry not found');
+        }
+        
+        // Remove from mock data
+        mockTimeEntries.splice(entryIndex, 1);
+        
+        return { id: timeEntryId };
+      }
+    },
+    onSuccess: () => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ['timeEntries'] });
     },
   });
 }
@@ -192,26 +271,50 @@ export function useActiveTimeEntry() {
     queryFn: async () => {
       if (!userId) return null;
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const activeEntry = mockTimeEntries.find(entry => entry.userId === userId && entry.endTime === null);
-      return activeEntry || null;
+      try {
+        if (activeTimeTracking && activeTimeTracking.userId === userId) {
+          const startTime = activeTimeTracking.startTime;
+          const now = new Date();
+          const minutesSpent = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60));
+          
+          return {
+            taskId: activeTimeTracking.taskId,
+            description: activeTimeTracking.description,
+            startTime: startTime.toISOString(),
+            elapsedMinutes: minutesSpent,
+            isActive: true
+          };
+        }
+        
+        // If no local active tracking, check API
+        const response = await fetch(`/api/time-entries/active?userId=${userId}`);
+        if (!response.ok) {
+          throw new Error('API error');
+        }
+        
+        const data = await response.json();
+        return data.timeEntry || null;
+      } catch (error) {
+        console.warn('Falling back to mock for active time entry:', error);
+        // Just return the local active tracking data if available
+        if (activeTimeTracking && activeTimeTracking.userId === userId) {
+          const startTime = activeTimeTracking.startTime;
+          const now = new Date();
+          const minutesSpent = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60));
+          
+          return {
+            taskId: activeTimeTracking.taskId,
+            description: activeTimeTracking.description,
+            startTime: startTime.toISOString(),
+            elapsedMinutes: minutesSpent,
+            isActive: true
+          };
+        }
+        
+        return null;
+      }
     },
     enabled: !!userId,
-    refetchInterval: 1000, // Refetch every second to update timer
+    refetchInterval: 60000, // Refetch every minute to update duration
   });
 }
-
-// Format duration in seconds to human-readable format
-export const formatDuration = (durationInSeconds: number | null): string => {
-  if (durationInSeconds === null) return '00:00:00';
-  
-  const hours = Math.floor(durationInSeconds / 3600);
-  const minutes = Math.floor((durationInSeconds % 3600) / 60);
-  const seconds = durationInSeconds % 60;
-  
-  return [hours, minutes, seconds]
-    .map(val => val.toString().padStart(2, '0'))
-    .join(':');
-}; 

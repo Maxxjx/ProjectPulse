@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { theme } from "@/lib/utils/theme"
 
 const Card = React.forwardRef<
   HTMLDivElement,
@@ -9,7 +10,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border border-slate-200 bg-white text-slate-950 shadow dark:border-slate-800 dark:bg-[#1F2937] dark:text-slate-50",
+      "rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm transition-all duration-200 hover:shadow-md dark:border-[#374151] dark:bg-[#1F2937] dark:text-slate-50",
       className
     )}
     {...props}
@@ -35,7 +36,7 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn("font-semibold leading-none tracking-tight", className)}
+    className={cn("text-xl font-semibold leading-none tracking-tight", className)}
     {...props}
   />
 ))
@@ -73,4 +74,4 @@ const CardFooter = React.forwardRef<
 ))
 CardFooter.displayName = "CardFooter"
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } 
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }

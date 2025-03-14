@@ -1,13 +1,10 @@
 'use client';
 
 import React from 'react';
-import dynamic from 'next/dynamic';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TimeEntry, Project, User } from '@prisma/client';
-import { format, parseISO, startOfWeek, endOfWeek, eachDayOfInterval, getDay } from 'date-fns';
-
-// Dynamically import ApexCharts to avoid SSR issues
-const ApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
+import { TimeEntry, Project, User } from '@/lib/data/types';
+import { format, parseISO, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import ChartWrapper from './ChartWrapper';
 
 interface TimeTrackingChartProps {
   timeEntries: TimeEntry[];
@@ -18,16 +15,24 @@ interface TimeTrackingChartProps {
   description?: string;
 }
 
-export function TimeTrackingChart({
+const TimeTrackingChart: React.FC<TimeTrackingChartProps> = ({
   timeEntries,
   projects,
   users,
   height = 350,
   title = 'Time Tracking',
   description = 'Analysis of time spent on projects'
-}: TimeTrackingChartProps) {
+}) => {
+  // Ensure all time entries have hours calculated from minutes if not already present
+  const entriesWithHours = timeEntries.map(entry => ({
+    ...entry,
+    hours: 'hours' in entry ? Number(entry.hours) : Number(entry.minutes) / 60,
+    // Ensure projectId is set for grouping purposes
+    projectId: entry.projectId || (entry.task && entry.task.projectId ? entry.task.projectId.toString() : undefined)
+  }));
+
   // Create maps for quick lookups
-  const projectMap = new Map<string, Project>();
+  const projectMap = new Map<string | number, Project>();
   projects.forEach(project => {
     projectMap.set(project.id, project);
   });
@@ -38,24 +43,24 @@ export function TimeTrackingChart({
   });
 
   // Group time entries by project
-  const entriesByProject = new Map<string, TimeEntry[]>();
+  const entriesByProject = new Map<string, typeof entriesWithHours>();
   
   projects.forEach(project => {
-    entriesByProject.set(project.id, []);
+    entriesByProject.set(project.id.toString(), []);
   });
   
-  timeEntries.forEach(entry => {
-    if (entry.projectId && entriesByProject.has(entry.projectId)) {
-      const projectEntries = entriesByProject.get(entry.projectId) || [];
+  entriesWithHours.forEach(entry => {
+    if (entry.projectId && entriesByProject.has(entry.projectId.toString())) {
+      const projectEntries = entriesByProject.get(entry.projectId.toString()) || [];
       projectEntries.push(entry);
-      entriesByProject.set(entry.projectId, projectEntries);
+      entriesByProject.set(entry.projectId.toString(), projectEntries);
     }
   });
 
   // Calculate total hours by project
   const projectHours = Array.from(entriesByProject.entries()).map(([projectId, entries]) => {
     const project = projectMap.get(projectId);
-    const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
+    const totalHours = entries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
     
     return {
       projectId,
@@ -66,15 +71,7 @@ export function TimeTrackingChart({
 
   // Prepare data for the pie chart
   const pieChartOptions = {
-    chart: {
-      type: 'pie' as const,
-      foreColor: '#64748b', // slate-500
-    },
     labels: projectHours.map(p => p.projectName),
-    legend: {
-      position: 'bottom' as const,
-      fontSize: '14px',
-    },
     dataLabels: {
       enabled: true,
       formatter: (val: number) => `${Math.round(val)}%`,
@@ -86,22 +83,9 @@ export function TimeTrackingChart({
         }
       }
     },
-    theme: {
-      mode: 'dark' as const,
+    legend: {
+      position: 'bottom' as const,
     },
-    responsive: [
-      {
-        breakpoint: 480,
-        options: {
-          chart: {
-            height: 300,
-          },
-          legend: {
-            position: 'bottom',
-          },
-        },
-      },
-    ],
   };
 
   const pieSeries = projectHours.map(p => p.totalHours);
@@ -124,7 +108,9 @@ export function TimeTrackingChart({
   });
 
   // Fill in the hours data
-  timeEntries.forEach(entry => {
+  entriesWithHours.forEach(entry => {
+    if (!entry.date) return;
+    
     const entryDate = typeof entry.date === 'string' 
       ? parseISO(entry.date) 
       : new Date(entry.date);
@@ -133,19 +119,12 @@ export function TimeTrackingChart({
     const dayIndex = dailyHours.findIndex(d => d.date === dayStr);
     
     if (dayIndex !== -1) {
-      dailyHours[dayIndex].hours += entry.hours;
+      dailyHours[dayIndex].hours += (entry.hours || 0);
     }
   });
 
   // Prepare data for the area chart
   const areaChartOptions = {
-    chart: {
-      type: 'area' as const,
-      foreColor: '#64748b', // slate-500
-      toolbar: {
-        show: true,
-      },
-    },
     dataLabels: {
       enabled: false,
     },
@@ -175,9 +154,6 @@ export function TimeTrackingChart({
         stops: [0, 90, 100],
       },
     },
-    theme: {
-      mode: 'dark' as const,
-    },
   };
 
   const areaSeries = [
@@ -189,13 +165,13 @@ export function TimeTrackingChart({
 
   // Calculate user-specific metrics
   const userMetrics = users.map(user => {
-    const userEntries = timeEntries.filter(entry => entry.userId === user.id);
-    const totalHours = userEntries.reduce((sum, entry) => sum + entry.hours, 0);
+    const userEntries = entriesWithHours.filter(entry => entry.userId === user.id);
+    const totalHours = userEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
     
     // Get projects the user worked on
     const userProjects = new Set<string>();
     userEntries.forEach(entry => {
-      if (entry.projectId) userProjects.add(entry.projectId);
+      if (entry.projectId) userProjects.add(entry.projectId.toString());
     });
     
     return {
@@ -217,25 +193,21 @@ export function TimeTrackingChart({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
             <h3 className="text-sm font-medium mb-3">Time Distribution by Project</h3>
-            {typeof window !== 'undefined' && (
-              <ApexChart
-                options={pieChartOptions}
-                series={pieSeries}
-                type="pie"
-                height={height}
-              />
-            )}
+            <ChartWrapper
+              type="pie"
+              series={pieSeries}
+              options={pieChartOptions}
+              height={height}
+            />
           </div>
           <div>
             <h3 className="text-sm font-medium mb-3">Weekly Time Tracking</h3>
-            {typeof window !== 'undefined' && (
-              <ApexChart
-                options={areaChartOptions}
-                series={areaSeries}
-                type="area"
-                height={height}
-              />
-            )}
+            <ChartWrapper
+              type="area"
+              series={areaSeries}
+              options={areaChartOptions}
+              height={height}
+            />
           </div>
         </div>
 
@@ -245,12 +217,12 @@ export function TimeTrackingChart({
             {userMetrics.slice(0, 3).map(metric => (
               <div key={metric.userId} className="p-4 border rounded-lg">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
+                  <div className="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center text-white">
                     {metric.userName.charAt(0)}
                   </div>
                   <div>
                     <p className="font-medium">{metric.userName}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-gray-400">
                       {metric.projectCount} {metric.projectCount === 1 ? 'project' : 'projects'}
                     </p>
                   </div>
@@ -263,6 +235,6 @@ export function TimeTrackingChart({
       </CardContent>
     </Card>
   );
-}
+};
 
-export default TimeTrackingChart; 
+export default TimeTrackingChart;

@@ -10,7 +10,7 @@ const ApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 interface TeamPerformanceChartProps {
   users: User[];
-  timeEntries: TimeEntry[];
+  timeEntries?: (TimeEntry & { hours?: number })[];
   tasks: Task[];
   height?: number;
   title?: string;
@@ -19,7 +19,7 @@ interface TeamPerformanceChartProps {
 
 export function TeamPerformanceChart({
   users,
-  timeEntries,
+  timeEntries = [],
   tasks,
   height = 350,
   title = 'Team Performance',
@@ -31,10 +31,16 @@ export function TeamPerformanceChart({
     taskMap.set(task.id, task);
   });
 
+  // Ensure all time entries have hours calculated from minutes if not already present
+  const entriesWithHours = timeEntries.map(entry => ({
+    ...entry,
+    hours: entry.hours || entry.minutes / 60
+  }));
+
   // Calculate performance metrics for each user
   const performanceData = users.map(user => {
     // User's time entries
-    const userTimeEntries = timeEntries.filter(entry => entry.userId === user.id);
+    const userTimeEntries = entriesWithHours.filter(entry => entry.userId === user.id);
     
     // Total hours logged
     const totalHours = userTimeEntries.reduce((sum, entry) => sum + entry.hours, 0);
