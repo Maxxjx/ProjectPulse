@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
+import { DashboardFilters, DashboardFilters as FilterTypes } from '@/components/dashboard/DashboardFilters';
+import { DateRange } from 'react-day-picker';
+import { formatDistance } from 'date-fns';
 
 // Sample project data
 const sampleProjects = [
@@ -59,19 +63,90 @@ const sampleProjects = [
 ];
 
 export default function ProjectListView() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  
+  useEffect(() => {
+    if (status === "loading") return; // Do nothing while loading
+    if (!session) {
+      // Redirect to login or show an error
+      window.location.href = '/login'; // Adjust the path as necessary
+    }
+  }, [session, status]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy] = useState('deadline');
+  const [projects, setProjects] = useState(sampleProjects);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filters, setFilters] = useState<FilterTypes>({});
+  
+  // Fetch projects from the API
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Build query parameters based on filters
+        const queryParams = new URLSearchParams();
+        if (filters.projectId) queryParams.append('id', filters.projectId);
+        if (filters.status) queryParams.append('status', filters.status);
+        if (filters.departmentId) queryParams.append('department', filters.departmentId);
+        if (filters.dateRange?.from) queryParams.append('fromDate', filters.dateRange.from.toISOString());
+        if (filters.dateRange?.to) queryParams.append('toDate', filters.dateRange.to.toISOString());
+        
+        const url = `/api/projects${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch projects');
+        }
+        
+        const data = await response.json();
+        setProjects(data);
+        console.log('Projects fetched successfully:', data);
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+        toast.error('Failed to load projects, showing sample data');
+        // Keep using sample data on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchProjects();
+  }, [filters]);
 
-  // Filter projects based on search term and status
-  const filteredProjects = sampleProjects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        project.description.toLowerCase().includes(searchTerm.toLowerCase());
+  // Handle filter changes
+  const handleFilterChange = (newFilters: FilterTypes) => {
+    setFilters(newFilters);
+  };
+
+  // Filter projects based on search term and filters
+  const filteredProjects = projects.filter(project => {
+    // Search term filter
+    const matchesSearch = 
+      searchTerm === '' ||
+      project.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesStatus = statusFilter === 'All' || project.status === statusFilter;
+    // Status filter from the dropdown
+    const matchesStatusDropdown = statusFilter === 'All' || 
+      project.status === statusFilter;
     
-    return matchesSearch && matchesStatus;
+    // Status filter from DashboardFilters
+    const matchesStatusFilter = !filters.status || 
+      project.status.toLowerCase().replace(' ', '-') === filters.status;
+    
+    // Date filter
+    let matchesDateFilter = true;
+    if (filters.dateRange?.from) {
+      const projectDeadline = new Date(project.deadline);
+      const fromDate = filters.dateRange.from;
+      const toDate = filters.dateRange.to || new Date();
+      
+      matchesDateFilter = projectDeadline >= fromDate && projectDeadline <= toDate;
+    }
+    
+    return matchesSearch && matchesStatusDropdown && matchesStatusFilter && matchesDateFilter;
   });
 
   // Sort projects
@@ -128,73 +203,103 @@ export default function ProjectListView() {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Projects</h1>
-        <button className="bg-[#8B5CF6] hover:bg-opacity-90 transition px-4 py-2 rounded-md text-white flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+    <div className="p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+        <h1 className="text-2xl font-bold">Projects</h1>
+        <Link 
+          href="/dashboard/projects/new" 
+          className="bg-[#8B5CF6] hover:bg-[#A78BFA] transition px-4 py-2 rounded text-white flex items-center"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
           </svg>
           New Project
-        </button>
+        </Link>
       </div>
-
-      {/* Filters */}
-      <div className="bg-[#111827] rounded-lg p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      {/* Enhanced Filters Section */}
+      <div className="bg-[#111827] p-4 rounded-lg mb-6">
+        <div className="flex flex-col space-y-4">
+          {/* Search Input */}
           <div>
             <label htmlFor="search" className="block text-sm font-medium text-gray-400 mb-1">
-              Search
+              Search Projects
             </label>
             <input
               type="text"
               id="search"
-              placeholder="Search projects..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 bg-[#1F2937] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-white"
+              placeholder="Search by name or description"
+              className="w-full px-4 py-2 rounded-md bg-[#1F2937] border border-gray-700 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
             />
           </div>
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-400 mb-1">
-              Status
-            </label>
-            <select
-              id="status"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-[#1F2937] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-white"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Completed">Completed</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Not Started">Not Started</option>
-              <option value="Almost Complete">Almost Complete</option>
-              <option value="On Hold">On Hold</option>
-            </select>
+          
+          {/* Advanced Filters */}
+          <div className="mt-4">
+            <h3 className="font-medium text-gray-300 mb-3">Advanced Filters</h3>
+            <DashboardFilters
+              onFilterChange={handleFilterChange}
+              showProjectFilter={false}
+              statuses={[
+                { value: 'all', label: 'All Statuses' },
+                { value: 'in-progress', label: 'In Progress' },
+                { value: 'not-started', label: 'Not Started' },
+                { value: 'almost-complete', label: 'Almost Complete' },
+                { value: 'completed', label: 'Completed' },
+              ]}
+            />
           </div>
-          <div>
-            <label htmlFor="sort" className="block text-sm font-medium text-gray-400 mb-1">
-              Sort By
-            </label>
-            <select
-              id="sort"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="w-full px-3 py-2 bg-[#1F2937] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-white"
-            >
-              <option value="deadline">Deadline (Closest First)</option>
-              <option value="name">Project Name</option>
-              <option value="progress">Progress</option>
-              <option value="priority">Priority</option>
-            </select>
+          
+          {/* Sort Controls */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 mt-2">
+            <div className="flex items-center">
+              <label htmlFor="sortBy" className="block text-sm font-medium text-gray-400 mr-2">
+                Sort by:
+              </label>
+              <select
+                id="sortBy"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-2 py-1 rounded-md bg-[#1F2937] border border-gray-700 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
+              >
+                <option value="deadline">Deadline</option>
+                <option value="name">Name</option>
+                <option value="priority">Priority</option>
+                <option value="status">Status</option>
+                <option value="progress">Progress</option>
+              </select>
+            </div>
+            
+            <div className="flex items-center">
+              <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-400 mr-2">
+                Status:
+              </label>
+              <select
+                id="statusFilter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-2 py-1 rounded-md bg-[#1F2937] border border-gray-700 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
+              >
+                <option>All</option>
+                <option>In Progress</option>
+                <option>Not Started</option>
+                <option>Almost Complete</option>
+                <option>Completed</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
-
+      
       {/* Projects List */}
       <div className="space-y-4">
-        {sortedProjects.length > 0 ? (
+        {isLoading ? (
+          <div className="bg-[#111827] rounded-lg p-16 flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+            <p className="text-gray-400">Loading projects...</p>
+          </div>
+        ) : sortedProjects.length > 0 ? (
           sortedProjects.map((project) => (
             <div key={project.id} className="bg-[#111827] rounded-lg p-4 hover:bg-[#1a202c] transition-colors">
               <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-3">
@@ -257,4 +362,4 @@ export default function ProjectListView() {
       </div>
     </div>
   );
-} 
+}

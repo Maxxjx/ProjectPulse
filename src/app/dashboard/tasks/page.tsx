@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
+import { DashboardFilters, DashboardFilters as FilterTypes } from '@/components/dashboard/DashboardFilters';
+import { DateRange } from 'react-day-picker';
+import { formatDistance } from 'date-fns';
 
 // Sample task data
 const sampleTasks = [
@@ -99,21 +103,124 @@ const sampleTasks = [
 export default function TaskListView() {
   const { data: session } = useSession();
   const [searchTerm, setSearchTerm] = useState('');
+  const [tasks, setTasks] = useState(sampleTasks);
+  const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
   const [sortBy, setSortBy] = useState('deadline');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  // Filter tasks based on search, status, and priority
-  const filteredTasks = sampleTasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        task.project.toLowerCase().includes(searchTerm.toLowerCase());
+  const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
+  const [filters, setFilters] = useState<FilterTypes>({});
+  
+  // Fetch tasks from the API
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Build query parameters based on filters
+        const queryParams = new URLSearchParams();
+        if (filters.projectId) queryParams.append('projectId', filters.projectId);
+        if (filters.status) queryParams.append('status', filters.status);
+        if (filters.departmentId) queryParams.append('department', filters.departmentId);
+        if (filters.dateRange?.from) queryParams.append('fromDate', filters.dateRange.from.toISOString());
+        if (filters.dateRange?.to) queryParams.append('toDate', filters.dateRange.to.toISOString());
+        
+        const url = `/api/tasks${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch tasks');
+        }
+        
+        const data = await response.json();
+        setTasks(data);
+        console.log('Tasks fetched successfully:', data);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+        toast.error('Failed to load tasks, showing sample data');
+        // Keep using sample data on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
+    fetchTasks();
+  }, [filters]);
+  
+  // Fetch projects for project filter
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch('/api/projects');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch projects');
+        }
+        
+        const data = await response.json();
+        // Format projects for the filter dropdown
+        const formattedProjects = Array.isArray(data) ? 
+          data.map((project: any) => ({
+            id: project.id.toString(),
+            name: project.name
+          })) : [];
+          
+        setProjects(formattedProjects);
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+        // Use sample projects if API fails
+        setProjects([
+          { id: '1', name: 'Website Redesign' },
+          { id: '2', name: 'Mobile App Development' },
+          { id: '3', name: 'Marketing Campaign' },
+          { id: '4', name: 'Product Launch' },
+          { id: '5', name: 'Customer Research' }
+        ]);
+      }
+    };
+    
+    fetchProjects();
+  }, []);
+
+  // Handle filter changes
+  const handleFilterChange = (newFilters: FilterTypes) => {
+    setFilters(newFilters);
+  };
+
+  // Filter tasks based on search, status, priority, and advanced filters
+  const filteredTasks = tasks.filter(task => {
+    // Search term filter
+    const matchesSearch = searchTerm === '' ||
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.project.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Status filter from the dropdown
     const matchesStatus = statusFilter === 'All' || task.status === statusFilter;
+    
+    // Priority filter from the dropdown
     const matchesPriority = priorityFilter === 'All' || task.priority === priorityFilter;
     
-    return matchesSearch && matchesStatus && matchesPriority;
+    // Status filter from DashboardFilters
+    const matchesStatusFilter = !filters.status || 
+      task.status.toLowerCase().replace(' ', '-') === filters.status;
+    
+    // Project filter from DashboardFilters
+    const matchesProjectFilter = !filters.projectId || 
+      task.project.toLowerCase().replace(/\s+/g, '-') === projects.find(p => p.id === filters.projectId)?.name.toLowerCase().replace(/\s+/g, '-');
+    
+    // Date filter
+    let matchesDateFilter = true;
+    if (filters.dateRange?.from) {
+      const taskDeadline = new Date(task.deadline);
+      const fromDate = filters.dateRange.from;
+      const toDate = filters.dateRange.to || new Date();
+      
+      matchesDateFilter = taskDeadline >= fromDate && taskDeadline <= toDate;
+    }
+    
+    return matchesSearch && matchesStatus && matchesPriority && matchesStatusFilter && matchesProjectFilter && matchesDateFilter;
   });
 
   // Sort tasks
@@ -170,103 +277,144 @@ export default function TaskListView() {
   return (
     <div className="p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-        <h1 className="text-3xl font-bold">Tasks</h1>
-        <div className="flex space-x-2">
-          {session?.user?.role !== 'client' && (
-            <button className="bg-[#8B5CF6] hover:bg-opacity-90 transition px-4 py-2 rounded text-white flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
-              Add Task
-            </button>
-          )}
-          <div className="relative">
-            <button 
-              className="bg-[#1F2937] border border-gray-600 hover:bg-opacity-90 transition px-4 py-2 rounded flex items-center"
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" />
-              </svg>
-              Filter
-            </button>
-          </div>
-        </div>
+        <h1 className="text-2xl font-bold">Tasks</h1>
+        <Link 
+          href="/dashboard/tasks/new" 
+          className="bg-[#8B5CF6] hover:bg-[#A78BFA] transition px-4 py-2 rounded text-white flex items-center"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+          </svg>
+          New Task
+        </Link>
       </div>
-
-      {/* Filters */}
-      {isFilterOpen && (
-        <div className="bg-[#111827] rounded-lg p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label htmlFor="search" className="block text-sm font-medium text-gray-400 mb-1">
-                Search
-              </label>
-              <input
-                type="text"
-                id="search"
-                placeholder="Search tasks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 bg-[#1F2937] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-white"
+      
+      {/* Enhanced Filters Section */}
+      <div className="bg-[#111827] p-4 rounded-lg mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-medium">Filters</h2>
+          <button 
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="text-sm text-[#8B5CF6] hover:text-[#A78BFA] flex items-center"
+          >
+            {isFilterOpen ? (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+                Hide Filters
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+                Show Filters
+              </>
+            )}
+          </button>
+        </div>
+        
+        {/* Search Input - Always visible */}
+        <div className="mb-4">
+          <label htmlFor="search" className="block text-sm font-medium text-gray-400 mb-1">
+            Search Tasks
+          </label>
+          <input
+            type="text"
+            id="search"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by title, description, or project"
+            className="w-full px-4 py-2 rounded-md bg-[#1F2937] border border-gray-700 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
+          />
+        </div>
+        
+        {/* Advanced Filter Section - Toggleable */}
+        {isFilterOpen && (
+          <>
+            {/* Quick Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-400 mb-1">
+                  Status
+                </label>
+                <select
+                  id="statusFilter"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full px-4 py-2 rounded-md bg-[#1F2937] border border-gray-700 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
+                >
+                  <option>All</option>
+                  <option>In Progress</option>
+                  <option>Completed</option>
+                  <option>Not Started</option>
+                  <option>On Hold</option>
+                </select>
+              </div>
+              
+              <div>
+                <label htmlFor="priorityFilter" className="block text-sm font-medium text-gray-400 mb-1">
+                  Priority
+                </label>
+                <select
+                  id="priorityFilter"
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                  className="w-full px-4 py-2 rounded-md bg-[#1F2937] border border-gray-700 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
+                >
+                  <option>All</option>
+                  <option>High</option>
+                  <option>Medium</option>
+                  <option>Low</option>
+                </select>
+              </div>
+              
+              <div>
+                <label htmlFor="sortBy" className="block text-sm font-medium text-gray-400 mb-1">
+                  Sort By
+                </label>
+                <select
+                  id="sortBy"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full px-4 py-2 rounded-md bg-[#1F2937] border border-gray-700 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent"
+                >
+                  <option value="deadline">Deadline</option>
+                  <option value="title">Title</option>
+                  <option value="created">Created Date</option>
+                  <option value="priority">Priority</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Advanced Filters Component */}
+            <div className="mt-4">
+              <h3 className="font-medium text-gray-300 mb-3">Advanced Filters</h3>
+              <DashboardFilters
+                projects={projects}
+                onFilterChange={handleFilterChange}
+                statuses={[
+                  { value: 'all', label: 'All Statuses' },
+                  { value: 'in-progress', label: 'In Progress' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'not-started', label: 'Not Started' },
+                  { value: 'on-hold', label: 'On Hold' },
+                ]}
               />
             </div>
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-400 mb-1">
-                Status
-              </label>
-              <select
-                id="status"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-[#1F2937] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-white"
-              >
-                <option value="All">All Statuses</option>
-                <option value="Completed">Completed</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Not Started">Not Started</option>
-                <option value="On Hold">On Hold</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="priority" className="block text-sm font-medium text-gray-400 mb-1">
-                Priority
-              </label>
-              <select
-                id="priority"
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-[#1F2937] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-white"
-              >
-                <option value="All">All Priorities</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="sort" className="block text-sm font-medium text-gray-400 mb-1">
-                Sort By
-              </label>
-              <select
-                id="sort"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-3 py-2 bg-[#1F2937] border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] text-white"
-              >
-                <option value="deadline">Deadline (Closest First)</option>
-                <option value="created">Recently Created</option>
-                <option value="title">Task Name</option>
-                <option value="priority">Priority</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      )}
-
+          </>
+        )}
+      </div>
+      
       {/* Tasks List */}
       <div className="space-y-4">
-        {sortedTasks.length > 0 ? (
+        {isLoading ? (
+          <div className="bg-[#111827] rounded-lg p-16 flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#8B5CF6] mb-4"></div>
+            <p className="text-gray-400">Loading tasks...</p>
+          </div>
+        ) : sortedTasks.length > 0 ? (
           sortedTasks.map((task) => (
             <div key={task.id} className="bg-[#111827] rounded-lg p-4 hover:bg-[#1a202c] transition-colors flex flex-col md:flex-row md:items-center">
               <div className="flex-1">

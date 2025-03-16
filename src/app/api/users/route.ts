@@ -4,13 +4,15 @@ import { z } from 'zod';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { hash } from 'bcryptjs';
 
 // Validation schema for creating a user
 const createUserSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['ADMIN', 'TEAM', 'CLIENT']).default('TEAM'),
+  role: z.string().transform(val => val.toUpperCase())
+    .pipe(z.enum(['ADMIN', 'TEAM', 'CLIENT'])).default('TEAM'),
 });
 
 // GET all users
@@ -41,7 +43,6 @@ export async function GET() {
             image: true,
           },
         });
-        
         return NextResponse.json(users);
       } else {
         // Admins can see all user data
@@ -51,7 +52,7 @@ export async function GET() {
     } else {
       // Use mock data service
       const users = await userService.getUsers();
-    return NextResponse.json({ users }, { status: 200 });
+      return NextResponse.json(users, { status: 200 });
     }
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -68,9 +69,10 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     // Only admins can create users
-    if (!session || session.user.role !== 'ADMIN') {
+    console.log('User role from session:', session?.user?.role);
+    if (!session || session.user.role?.toUpperCase() !== 'ADMIN') {
       return new NextResponse(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized - Admin role required' }),
         { status: 401 }
       );
     }
@@ -81,6 +83,9 @@ export async function POST(request: NextRequest) {
     const validationResult = createUserSchema.safeParse(body);
     
     if (!validationResult.success) {
+      // Log the validation error details for debugging
+      console.log('Validation error details:', JSON.stringify(validationResult.error.format(), null, 2));
+      console.log('Request body:', JSON.stringify(body, null, 2));
       return NextResponse.json(
         { error: 'Validation error', details: validationResult.error.format() },
         { status: 400 }
@@ -98,37 +103,37 @@ export async function POST(request: NextRequest) {
         where: { email },
       });
       
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'User with this email already exists' },
-        { status: 409 }
-      );
-    }
-    
-      // Create user in the database
+      if (existingUser) {
+        return NextResponse.json(
+          { error: 'User with this email already exists' },
+          { status: 409 }
+        );
+      }
+      
+      const hashedPassword = await hash(password, 10);
       const user = await db.user.create({
         data: {
           name,
           email,
-          password, // Note: In a real app, this should be hashed
+          password: hashedPassword,
           role,
         },
       });
-      
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = user;
-      
-      return NextResponse.json(userWithoutPassword, { status: 201 });
+      return NextResponse.json(user, { status: 201 });
     } else {
-      // Use mock data service
-      const newUser = await userService.createUser({ name, email, password, role });
-    return NextResponse.json({ user: newUser }, { status: 201 });
+      const user = userService.createUser({
+        name,
+        email,
+        password,
+        role,
+      });
+      return NextResponse.json({ user }, { status: 201 });
     }
   } catch (error) {
-    console.error('Error in POST /api/users:', error);
+    console.error('Error creating user:', error);
     return NextResponse.json(
       { error: 'Failed to create user' },
       { status: 500 }
     );
   }
-} 
+}

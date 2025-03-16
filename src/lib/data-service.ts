@@ -25,13 +25,20 @@ export const DataServiceInstance = {
   initialize: async () => await initializeDataService()
 };
 
-// Initialize the data service automatically on import
-// eslint-disable-next-line no-unused-vars
-const initialize = (async () => {
-  try {
-    await DataServiceInstance.initialize();
-    console.log('Application started with data service.');
-  } catch (error) {
-    console.error('Failed to initialize data service:', error);
-  }
-})(); 
+// Initialize the data service, but only on the server side
+// The browser will always use mock data
+import { isDatabaseEnvironment } from './prisma';
+
+// Only auto-initialize if we're on the server
+if (isDatabaseEnvironment()) {
+  (async () => {
+    try {
+      await DataServiceInstance.initialize();
+      console.log('Server-side application started with data service.');
+    } catch (error) {
+      console.error('Failed to initialize data service:', error);
+    }
+  })();
+} else {
+  console.info('Client-side data service will use mock data.');
+} 

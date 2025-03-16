@@ -21,12 +21,17 @@ interface RoleBasedAnalyticsProps {
 
 const RoleBasedAnalytics: React.FC<RoleBasedAnalyticsProps> = ({
   role,
-  projects,
-  tasks,
-  timeEntries,
-  users,
+  projects: projectsData,
+  tasks: tasksData,
+  timeEntries: timeEntriesData,
+  users: usersData,
   isLoading
 }) => {
+  // Ensure all data is in array format
+  const projects = Array.isArray(projectsData) ? projectsData : [];
+  const tasks = Array.isArray(tasksData) ? tasksData : [];
+  const timeEntries = Array.isArray(timeEntriesData) ? timeEntriesData : [];
+  const users = Array.isArray(usersData) ? usersData : [];
   const [view, setView] = useState<string>(getDefaultViewForRole(role));
 
   // Helper to get default view based on role

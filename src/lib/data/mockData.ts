@@ -419,15 +419,17 @@ export const timeEntries: TimeEntry[] = [
     id: 1,
     taskId: 1,
     userId: '3', // Sarah
+    projectId: 1, // Website Redesign
     description: 'Creating wireframes for homepage',
     minutes: 180, // 3 hours
-    date: '2023-07-15',
+    date: '2023-07-15', // Keep original entries
     createdAt: '2023-07-15T17:00:00Z'
   },
   {
     id: 2,
     taskId: 1,
     userId: '3', // Sarah
+    projectId: 1, // Website Redesign
     description: 'Finalizing homepage design',
     minutes: 240, // 4 hours
     date: '2023-07-16',
@@ -437,6 +439,7 @@ export const timeEntries: TimeEntry[] = [
     id: 3,
     taskId: 2,
     userId: '5', // Emily
+    projectId: 2, // Mobile App Development
     description: 'Researching JWT implementations',
     minutes: 120, // 2 hours
     date: '2023-07-14',
@@ -446,6 +449,7 @@ export const timeEntries: TimeEntry[] = [
     id: 4,
     taskId: 2,
     userId: '5', // Emily
+    projectId: 2, // Mobile App Development
     description: 'Setting up auth endpoints',
     minutes: 360, // 6 hours
     date: '2023-07-17',
@@ -455,6 +459,7 @@ export const timeEntries: TimeEntry[] = [
     id: 5,
     taskId: 3,
     userId: '8', // Lisa
+    projectId: 3, // Marketing Campaign
     description: 'Creating content calendar',
     minutes: 300, // 5 hours
     date: '2023-07-15',
@@ -464,10 +469,102 @@ export const timeEntries: TimeEntry[] = [
     id: 6,
     taskId: 3,
     userId: '8', // Lisa
+    projectId: 3, // Marketing Campaign
     description: 'Revising content strategy',
     minutes: 180, // 3 hours
     date: '2023-07-16',
     createdAt: '2023-07-16T17:00:00Z'
+  },
+  // Add more recent entries for the current date range
+  {
+    id: 7,
+    taskId: 1,
+    userId: '3', // Sarah
+    projectId: 1, // Website Redesign
+    description: 'UI refinements based on feedback',
+    minutes: 210, // 3.5 hours
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString().split('T')[0], // 2 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString()
+  },
+  {
+    id: 8,
+    taskId: 2,
+    userId: '5', // Emily
+    projectId: 2, // Mobile App Development
+    description: 'API optimization',
+    minutes: 300, // 5 hours
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString().split('T')[0], // 3 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString()
+  },
+  {
+    id: 9,
+    taskId: 3,
+    userId: '8', // Lisa
+    projectId: 3, // Marketing Campaign
+    description: 'Social media campaign execution',
+    minutes: 240, // 4 hours
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString().split('T')[0], // 5 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString()
+  },
+  {
+    id: 10,
+    taskId: 6,
+    userId: '2', // John
+    projectId: 1, // Website Redesign
+    description: 'Mobile navigation testing',
+    minutes: 180, // 3 hours
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString().split('T')[0], // 4 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString()
+  },
+  {
+    id: 11,
+    taskId: 8,
+    userId: '8', // Lisa
+    projectId: 3, // Marketing Campaign
+    description: 'Analytics dashboard setup',
+    minutes: 270, // 4.5 hours
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString().split('T')[0], // 6 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString()
+  },
+  {
+    id: 12,
+    taskId: 5,
+    userId: '10', // James
+    projectId: 5, // Customer Research
+    description: 'Customer interview analysis',
+    minutes: 360, // 6 hours
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString().split('T')[0], // 7 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString()
+  },
+  {
+    id: 13,
+    taskId: 1,
+    userId: '3', // Sarah
+    projectId: 1, // Website Redesign
+    description: 'Accessibility improvements',
+    minutes: 240, // 4 hours
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString().split('T')[0], // 8 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString()
+  },
+  {
+    id: 14,
+    taskId: 4,
+    userId: '10', // James
+    projectId: 4, // Product Launch
+    description: 'Product launch preparation',
+    minutes: 420, // 7 hours
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString().split('T')[0], // 10 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString()
+  },
+  {
+    id: 15,
+    taskId: 7,
+    userId: '4', // Michael
+    projectId: 2, // Mobile App Development
+    description: 'Database query optimization',
+    minutes: 300, // 5 hours
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString().split('T')[0], // 12 days ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString()
   }
 ];
 

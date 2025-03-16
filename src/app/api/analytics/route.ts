@@ -5,6 +5,7 @@ import {
   userService, 
   activityService 
 } from '@/lib/data/mockDataService';
+import { db } from '@/lib/db';
 import { ProjectStatus, TaskStatus, Project, Task } from '@/lib/data/types';
 
 export async function GET(request: NextRequest) {
@@ -40,7 +41,60 @@ export async function GET(request: NextRequest) {
 }
 
 // Get summary analytics
-function getSummaryAnalytics() {
+async function getSummaryAnalytics() {
+  try {
+    console.log('Trying to fetch analytics data from database');
+    
+    // Try to get real data from the database
+    const dbProjects = await db.project.findMany();
+    const dbTasks = await db.task.findMany();
+    const dbUsers = await db.user.findMany();
+    
+    // If we have data in the database, use it
+    if (dbProjects.length > 0 || dbTasks.length > 0 || dbUsers.length > 0) {
+      console.log('Using real data from database for analytics');
+      
+      // Calculate project stats
+      const totalProjects = dbProjects.length;
+      const completedProjects = dbProjects.filter(p => p.status === 'Completed').length;
+      const inProgressProjects = dbProjects.filter(p => p.status === 'In Progress').length;
+      
+      // Calculate task stats
+      const totalTasks = dbTasks.length;
+      const completedTasks = dbTasks.filter(t => t.status === 'Completed').length;
+      const inProgressTasks = dbTasks.filter(t => t.status === 'In Progress').length;
+      const overdueTasksCount = dbTasks.filter(t => {
+        return t.deadline && new Date(t.deadline) < new Date() && t.status !== 'Completed';
+      }).length;
+      
+      // Return the analytics data
+      return NextResponse.json({
+        analytics: {
+          projects: {
+            total: totalProjects,
+            completed: completedProjects,
+            inProgress: inProgressProjects,
+            notStarted: totalProjects - completedProjects - inProgressProjects
+          },
+          tasks: {
+            total: totalTasks,
+            completed: completedTasks,
+            inProgress: inProgressTasks,
+            overdue: overdueTasksCount
+          },
+          users: {
+            total: dbUsers.length,
+          },
+          recentActivity: []  // This would need to be implemented with real activity data
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching analytics from database, falling back to mock data:', error);
+  }
+  
+  // Fall back to mock data if database access fails or returns no results
+  console.log('Using mock data for analytics');
   const projects = projectService.getProjects();
   const tasks = taskService.getTasks();
   const users = userService.getUsers();

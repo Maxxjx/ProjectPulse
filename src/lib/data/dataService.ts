@@ -1,4 +1,4 @@
-import { prisma, testDatabaseConnection } from '../prisma';
+import { prisma, testDatabaseConnection, isDatabaseEnvironment } from '../prisma';
 import * as mockDataService from './mockDataService';
 import { 
   User, 
@@ -15,6 +15,15 @@ let useMockData = true;
 
 // Initialize the service to check if database is available
 export async function initializeDataService() {
+  // First check if we're in a browser environment
+  if (!isDatabaseEnvironment()) {
+    // We're in a browser, always use mock data
+    useMockData = true;
+    console.info('Browser environment detected. Using mock data service.');
+    return false;
+  }
+  
+  // We're in a server environment, try to connect to the database
   const isDbConnected = await testDatabaseConnection();
   useMockData = !isDbConnected;
   
@@ -450,7 +459,7 @@ export const timeEntryService = {
         }
       }));
     } catch (error) {
-      console.error('Error fetching time entries by user from database:', error);
+      console.error('Error fetching time entries from database:', error);
       return mockDataService.timeEntryService.getTimeEntriesByUserId(userId);
     }
   },
@@ -490,10 +499,297 @@ export const timeEntryService = {
         }
       }));
     } catch (error) {
-      console.error('Error fetching time entries by task from database:', error);
+      console.error('Error fetching time entries from database:', error);
       return mockDataService.timeEntryService.getTimeEntriesByTaskId(taskId);
+    }
+  },
+  
+  getTimeEntriesByProjectId: async (projectId: string): Promise<TimeEntry[]> => {
+    if (useMockData) {
+      const allEntries = mockDataService.timeEntryService.getTimeEntries();
+      return allEntries.filter(entry => 
+        entry.task && entry.task.projectId === projectId
+      );
+    }
+    
+    try {
+      const timeEntries = await prisma.timeEntry.findMany({
+        where: {
+          task: {
+            projectId: projectId
+          }
+        },
+        include: {
+          task: {
+            include: {
+              project: true
+            }
+          },
+          user: true
+        }
+      });
+      
+      return timeEntries.map(entry => ({
+        id: entry.id,
+        description: entry.description,
+        startTime: entry.startTime.toISOString(),
+        endTime: entry.endTime ? entry.endTime.toISOString() : null,
+        duration: entry.duration,
+        taskId: entry.taskId,
+        task: {
+          title: entry.task.title,
+          projectId: entry.task.projectId,
+          project: entry.task.project.name
+        },
+        userId: entry.userId,
+        user: {
+          name: entry.user.name,
+          position: entry.user.position || undefined
+        }
+      }));
+    } catch (error) {
+      console.error('Error fetching time entries by project from database:', error);
+      const allEntries = await timeEntryService.getTimeEntries();
+      return allEntries.filter(entry => 
+        entry.task && entry.task.projectId === projectId
+      );
+    }
+  },
+  
+  createTimeEntry: async (entryData: Omit<TimeEntry, 'id'>): Promise<TimeEntry> => {
+    if (useMockData) {
+      if (typeof mockDataService.timeEntryService.createTimeEntry === 'function') {
+        return mockDataService.timeEntryService.createTimeEntry(entryData);
+      }
+      
+      const entry = {
+        id: new Date().getTime().toString(),
+        ...entryData,
+        date: new Date().toISOString()
+      };
+      return entry as TimeEntry;
+    }
+    
+    try {
+      const timeEntry = await prisma.timeEntry.create({
+        data: {
+          description: entryData.description,
+          startTime: new Date(entryData.date),
+          duration: entryData.hours * 60, // Convert hours to minutes for storage
+          userId: entryData.userId,
+          taskId: entryData.taskId
+        },
+        include: {
+          task: {
+            include: {
+              project: true
+            }
+          },
+          user: true
+        }
+      });
+      
+      return {
+        id: timeEntry.id,
+        description: timeEntry.description,
+        date: timeEntry.startTime.toISOString().split('T')[0],
+        hours: timeEntry.duration / 60, // Convert minutes back to hours
+        taskId: timeEntry.taskId,
+        task: {
+          title: timeEntry.task.title,
+          projectId: timeEntry.task.projectId,
+          project: timeEntry.task.project.name
+        },
+        userId: timeEntry.userId,
+        user: {
+          name: timeEntry.user.name,
+          position: timeEntry.user.position || undefined
+        }
+      };
+    } catch (error) {
+      console.error('Error creating time entry in database:', error);
+      
+      if (typeof mockDataService.timeEntryService.createTimeEntry === 'function') {
+        return mockDataService.timeEntryService.createTimeEntry(entryData);
+      }
+      
+      const entry = {
+        id: new Date().getTime().toString(),
+        ...entryData,
+        date: new Date().toISOString()
+      };
+      return entry as TimeEntry;
     }
   }
 };
 
-// Export additional services as needed 
+// Add notification service
+export const notificationService = {
+  getNotificationsByUserId: async (userId: string): Promise<Notification[]> => {
+    if (useMockData) {
+      if (typeof mockDataService.notificationService.getUserNotifications === 'function') {
+        return mockDataService.notificationService.getUserNotifications(userId);
+      }
+      
+      return [];
+    }
+    
+    try {
+      const notifications = await prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' }
+      });
+      
+      return notifications.map(notification => ({
+        id: notification.id,
+        userId: notification.userId,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        isRead: notification.isRead,
+        entityId: notification.entityId,
+        entityType: notification.entityType,
+        createdAt: notification.createdAt.toISOString(),
+        updatedAt: notification.updatedAt.toISOString()
+      }));
+    } catch (error) {
+      console.error('Error fetching notifications from database:', error);
+      
+      if (typeof mockDataService.notificationService.getUserNotifications === 'function') {
+        return mockDataService.notificationService.getUserNotifications(userId);
+      }
+      
+      return [];
+    }
+  },
+  
+  getNotificationById: async (id: string): Promise<Notification | null> => {
+    if (useMockData) {
+      const userNotifications = mockDataService.notificationService.getUserNotifications('all');
+      return userNotifications.find(n => n.id === id) || null;
+    }
+    
+    try {
+      const notification = await prisma.notification.findUnique({
+        where: { id }
+      });
+      
+      if (!notification) return null;
+      
+      return {
+        id: notification.id,
+        userId: notification.userId,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        isRead: notification.isRead,
+        entityId: notification.entityId,
+        entityType: notification.entityType,
+        createdAt: notification.createdAt.toISOString(),
+        updatedAt: notification.updatedAt.toISOString()
+      };
+    } catch (error) {
+      console.error('Error fetching notification from database:', error);
+      
+      const userNotifications = mockDataService.notificationService.getUserNotifications('all');
+      return userNotifications.find(n => n.id === id) || null;
+    }
+  },
+  
+  updateNotifications: async (ids: string[], isRead: boolean): Promise<Notification[]> => {
+    if (useMockData) {
+      const userNotifications = mockDataService.notificationService.getUserNotifications('all');
+      const updatedNotifications = userNotifications
+        .filter(n => ids.includes(n.id))
+        .map(n => ({
+          ...n,
+          isRead: isRead
+        }));
+      
+      return updatedNotifications;
+    }
+    
+    try {
+      await prisma.notification.updateMany({
+        where: { id: { in: ids } },
+        data: { isRead }
+      });
+      
+      const updatedNotifications = await prisma.notification.findMany({
+        where: { id: { in: ids } }
+      });
+      
+      return updatedNotifications.map(notification => ({
+        id: notification.id,
+        userId: notification.userId,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        isRead: notification.isRead,
+        entityId: notification.entityId,
+        entityType: notification.entityType,
+        createdAt: notification.createdAt.toISOString(),
+        updatedAt: notification.updatedAt.toISOString()
+      }));
+    } catch (error) {
+      console.error('Error updating notifications in database:', error);
+      
+      const userNotifications = mockDataService.notificationService.getUserNotifications('all');
+      const updatedNotifications = userNotifications
+        .filter(n => ids.includes(n.id))
+        .map(n => ({
+          ...n,
+          isRead: isRead
+        }));
+      
+      return updatedNotifications;
+    }
+  },
+  
+  createNotification: async (notificationData: Omit<Notification, 'id' | 'createdAt' | 'updatedAt'>): Promise<Notification> => {
+    if (useMockData) {
+      return {
+        id: new Date().getTime().toString(),
+        ...notificationData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+    
+    try {
+      const notification = await prisma.notification.create({
+        data: {
+          userId: notificationData.userId,
+          title: notificationData.title,
+          message: notificationData.message,
+          type: notificationData.type,
+          isRead: notificationData.isRead || false,
+          entityId: notificationData.entityId,
+          entityType: notificationData.entityType
+        }
+      });
+      
+      return {
+        id: notification.id,
+        userId: notification.userId,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        isRead: notification.isRead,
+        entityId: notification.entityId,
+        entityType: notification.entityType,
+        createdAt: notification.createdAt.toISOString(),
+        updatedAt: notification.updatedAt.toISOString()
+      };
+    } catch (error) {
+      console.error('Error creating notification in database:', error);
+      
+      return {
+        id: new Date().getTime().toString(),
+        ...notificationData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+  }
+};

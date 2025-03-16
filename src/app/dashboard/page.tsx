@@ -5,290 +5,274 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSummaryAnalytics, useRecentActivity } from '@/lib/hooks/useAnalytics';
-import ErrorBoundary from '@/components/ErrorBoundary'; // new import
-import DashboardCharts from '@/components/dashboard/DashboardCharts'; // Add import for charts
+import ErrorBoundary from '@/components/ErrorBoundary';
+import DashboardCharts from '@/components/dashboard/DashboardCharts';
+import { useProjects } from '@/lib/hooks/useProjects';
+import { useTasks } from '@/lib/hooks/useTasks';
+import { useUsers } from '@/lib/hooks/useUsers';
 
 // Dashboard components
 const AdminDashboard = () => {
   const { data: analytics, isLoading: isLoadingAnalytics } = useSummaryAnalytics();
   const { data: recentActivity, isLoading: isLoadingActivity } = useRecentActivity(5);
+  const { data: session } = useSession();
+  const { data: projects = [] } = useProjects();
+  const { data: tasks = [] } = useTasks();
+  const { data: users = [] } = useUsers();
+
+  // Calculate portfolio values for display
+  const totalProjects = projects.length;
+  const activeProjects = projects.filter(p => p.status === 'in-progress').length;
+  const completedTasks = tasks.filter(t => t.status === 'completed').length;
+  const pendingTasks = tasks.filter(t => t.status === 'pending' || t.status === 'in-progress').length;
+  
+  // Portfolio percentages for charts
+  const projectCompletionRate = totalProjects > 0 
+    ? Math.round((projects.filter(p => p.status === 'completed').length / totalProjects) * 100) 
+    : 0;
 
   return (
-    <main role="main" aria-label="Admin Dashboard">
-      {isLoadingAnalytics ? (
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" aria-label="Loading dashboard metrics">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="bg-[#111827] rounded-lg p-6 animate-pulse">
-              <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
-              <div className="h-8 bg-gray-700 rounded w-1/4 mb-2"></div>
-              <div className="h-4 bg-gray-700 rounded w-2/3"></div>
-            </div>
-          ))}
-        </section>
-      ) : (
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" aria-label="Dashboard metrics">
-          <article className="bg-[#111827] rounded-lg p-6 focus-within:ring-2 focus-within:ring-[#8B5CF6] hover:bg-[#1F2937] transition-colors">
-            <h2 className="font-semibold text-xl mb-2">Projects</h2>
-            <div className="flex justify-between items-center">
-              <span className="text-3xl font-bold">{analytics?.projects.total || 0}</span>
-              <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded text-sm">
-                {analytics?.projects.inProgress || 0} in progress
-              </span>
-            </div>
-            <div className="mt-4">
-              <Link 
-                href="/dashboard/projects" 
-                className="text-[#8B5CF6] hover:text-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] rounded-md py-1 px-2 -ml-2 text-sm flex items-center transition-colors"
-                aria-label="View all projects"
-              >
-                View all projects
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-4 w-4 ml-1" 
-                  viewBox="0 0 20 20" 
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path 
-                    fillRule="evenodd" 
-                    d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" 
-                    clipRule="evenodd" 
-                  />
+    <main className="bg-dark-200 text-gray-100 min-h-screen p-6">
+      {/* Welcome Section */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">Welcome, <span className="text-purple-400">{session?.user?.name || 'Naya'}</span></h1>
+        <p className="text-gray-400 text-sm">Here's your quick overview</p>
+      </div>
+
+      {/* Total Portfolio Value */}
+      <div className="bg-dark-100 rounded-xl p-6 mb-8 border border-dark-300 relative overflow-hidden">
+        <div className="absolute top-6 right-6 flex gap-2">
+          <button className="bg-purple-900/40 hover:bg-purple-800/60 p-2 rounded-full transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-purple-300" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+          </button>
+          <button className="bg-purple-900/40 hover:bg-purple-800/60 p-2 rounded-full transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-purple-300" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+        
+        <h2 className="text-gray-400 font-medium mb-2">Total Holding</h2>
+        
+        <div className="flex items-center gap-2">
+          <div className="text-3xl font-bold text-white">
+            ${analytics?.budget?.total?.toLocaleString() || '12,304.11'}
+          </div>
+          <span className="bg-green-900/30 text-green-400 px-2 py-1 rounded text-xs">
+            +2.4%
+          </span>
+        </div>
+      </div>
+
+      {/* My Portfolio Section */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-white">My Portfolio</h2>
+          <button className="bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 py-1 px-3 rounded-md text-sm flex items-center gap-1 transition-colors">
+            See All
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {/* Project Card */}
+          <div className="bg-dark-100 rounded-xl p-4 border border-dark-300 hover:border-purple-800/50 transition-all duration-300">
+            <div className="flex justify-between items-center mb-2">
+              <div className="bg-blue-900/30 p-2 rounded">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
                 </svg>
-              </Link>
+              </div>
+              <span className="text-green-400 text-xs">+1.2%</span>
             </div>
-          </article>
+            <h3 className="text-gray-400 text-xs">Projects</h3>
+            <p className="text-lg font-semibold text-white">{totalProjects || 0}</p>
+            <div className="mt-2 text-xs text-gray-500">Active: {activeProjects || 0}</div>
+          </div>
           
-          <article className="bg-[#111827] rounded-lg p-6 focus-within:ring-2 focus-within:ring-[#8B5CF6] hover:bg-[#1F2937] transition-colors">
-            <h2 className="font-semibold text-xl mb-2">Users</h2>
-            <div className="flex justify-between items-center">
-              <span className="text-3xl font-bold">{analytics?.users.total || 0}</span>
-              <span className="bg-blue-500/20 text-blue-500 px-2 py-1 rounded text-sm">
-                {analytics?.users.team || 0} team members
-              </span>
-            </div>
-            <div className="mt-4">
-              <Link 
-                href="/dashboard/users" 
-                className="text-[#8B5CF6] hover:text-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] rounded-md py-1 px-2 -ml-2 text-sm flex items-center transition-colors"
-                aria-label="Manage users"
-              >
-                Manage users
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-4 w-4 ml-1" 
-                  viewBox="0 0 20 20" 
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+          {/* Tasks Card */}
+          <div className="bg-dark-100 rounded-xl p-4 border border-dark-300 hover:border-purple-800/50 transition-all duration-300">
+            <div className="flex justify-between items-center mb-2">
+              <div className="bg-purple-900/30 p-2 rounded">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                  <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
                 </svg>
-              </Link>
+              </div>
+              <span className="text-red-400 text-xs">-0.8%</span>
             </div>
-          </article>
+            <h3 className="text-gray-400 text-xs">Tasks</h3>
+            <p className="text-lg font-semibold text-white">{tasks.length || 0}</p>
+            <div className="mt-2 text-xs text-gray-500">Pending: {pendingTasks || 0}</div>
+          </div>
           
-          <article className="bg-[#111827] rounded-lg p-6 focus-within:ring-2 focus-within:ring-[#8B5CF6] hover:bg-[#1F2937] transition-colors">
-            <h2 className="font-semibold text-xl mb-2">Budget</h2>
-            <div className="flex justify-between items-center">
-              <span className="text-3xl font-bold">${(analytics?.budget.total || 0).toLocaleString()}</span>
-              <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded text-sm">
-                {analytics?.budget.utilization || 0}% used
-              </span>
-            </div>
-            <div className="mt-4">
-              <Link 
-                href="/dashboard/analytics" 
-                className="text-[#8B5CF6] hover:text-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] rounded-md py-1 px-2 -ml-2 text-sm flex items-center transition-colors"
-                aria-label="View reports"
-              >
-                View reports
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-4 w-4 ml-1" 
-                  viewBox="0 0 20 20" 
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+          {/* Team Card */}
+          <div className="bg-dark-100 rounded-xl p-4 border border-dark-300 hover:border-purple-800/50 transition-all duration-300">
+            <div className="flex justify-between items-center mb-2">
+              <div className="bg-green-900/30 p-2 rounded">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
                 </svg>
-              </Link>
+              </div>
+              <span className="text-green-400 text-xs">+3.1%</span>
             </div>
-          </article>
-        </section>
-      )}
+            <h3 className="text-gray-400 text-xs">Team</h3>
+            <p className="text-lg font-semibold text-white">{users.length || 0}</p>
+            <div className="mt-2 text-xs text-gray-500">Active: {users.filter(u => u.status === 'active').length || 0}</div>
+          </div>
+          
+          {/* Budget Card */}
+          <div className="bg-dark-100 rounded-xl p-4 border border-dark-300 hover:border-purple-800/50 transition-all duration-300">
+            <div className="flex justify-between items-center mb-2">
+              <div className="bg-indigo-900/30 p-2 rounded">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <span className="text-green-400 text-xs">+0.9%</span>
+            </div>
+            <h3 className="text-gray-400 text-xs">Budget</h3>
+            <p className="text-lg font-semibold text-white">${analytics?.budget?.total?.toLocaleString()}</p>
+            <div className="mt-2 text-xs text-gray-500">Used: {analytics?.budget?.utilization || 0}%</div>
+          </div>
+          
+          {/* Clients Card */}
+          <div className="bg-dark-100 rounded-xl p-4 border border-dark-300 hover:border-purple-800/50 transition-all duration-300">
+            <div className="flex justify-between items-center mb-2">
+              <div className="bg-amber-900/30 p-2 rounded">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                </svg>
+              </div>
+              <span className="text-amber-400 text-xs">+1.5%</span>
+            </div>
+            <h3 className="text-gray-400 text-xs">Clients</h3>
+            <p className="text-lg font-semibold text-white">{analytics?.users?.clients || 0}</p>
+            <div className="mt-2 text-xs text-gray-500">Active: {analytics?.users?.activeClients || 0}</div>
+          </div>
+        </div>
+      </div>
 
       {/* Charts Section */}
-      <ErrorBoundary fallback={<div className="text-red-500">Error loading charts</div>}>
-        <section className="mb-8">
-          <DashboardCharts />
-        </section>
-      </ErrorBoundary>
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-white">Portfolio Performance</h2>
+          <div className="flex space-x-2">
+            <button className="bg-dark-300 hover:bg-dark-400 text-gray-400 py-1 px-3 rounded-md text-sm transition-colors">1D</button>
+            <button className="bg-dark-300 hover:bg-dark-400 text-gray-400 py-1 px-3 rounded-md text-sm transition-colors">1W</button>
+            <button className="bg-dark-300 hover:bg-dark-400 text-gray-400 py-1 px-3 rounded-md text-sm transition-colors">1M</button>
+            <button className="bg-purple-900/70 text-purple-300 py-1 px-3 rounded-md text-sm">3M</button>
+            <button className="bg-dark-300 hover:bg-dark-400 text-gray-400 py-1 px-3 rounded-md text-sm transition-colors">1Y</button>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section className="bg-[#111827] rounded-lg p-6" aria-labelledby="recent-activity-heading">
-          <h2 id="recent-activity-heading" className="font-semibold text-xl mb-4">Recent Activity</h2>
-          
-          {isLoadingActivity ? (
-            <div className="space-y-4" aria-label="Loading recent activities">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="flex items-start animate-pulse">
-                  <div className="w-8 h-8 rounded-full bg-gray-700 mr-3"></div>
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-700 rounded w-1/2"></div>
+        <ErrorBoundary fallback={<div className="text-red-500">Error loading charts</div>}>
+          <div className="bg-dark-100 rounded-xl p-6 border border-dark-300 relative overflow-hidden">
+            <DashboardCharts />
+          </div>
+        </ErrorBoundary>
+      </div>
+
+      {/* Portfolio Overview */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-white">Portfolio Overview</h2>
+          <div className="flex space-x-2">
+            <button className="bg-purple-900/70 text-purple-300 py-1 px-3 rounded-md text-sm transition-colors">All</button>
+            <button className="bg-dark-300 hover:bg-dark-400 text-gray-400 py-1 px-3 rounded-md text-sm transition-colors">Clients</button>
+            <button className="bg-dark-300 hover:bg-dark-400 text-gray-400 py-1 px-3 rounded-md text-sm transition-colors">Teams</button>
+          </div>
+        </div>
+
+        <div className="bg-dark-100 rounded-xl p-6 border border-dark-300">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-dark-400 text-gray-400 text-xs uppercase">
+                  <th className="text-left py-3 px-4">Name</th>
+                  <th className="text-left py-3 px-4">Last Price</th>
+                  <th className="text-left py-3 px-4">Change %</th>
+                  <th className="text-left py-3 px-4">Market Cap</th>
+                  <th className="text-left py-3 px-4">Last 7 days</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-dark-400">
+                {projects.slice(0, 3).map((project, index) => (
+                  <tr key={index} className="hover:bg-dark-300/50 transition-colors">
+                    <td className="py-3 px-4 flex items-center">
+                      <div className="bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                        <span className="text-white text-xs font-bold">{project.name?.substring(0, 2).toUpperCase()}</span>
+                      </div>
+                      <div>
+                        <p className="text-white">{project.name}</p>
+                        <p className="text-xs text-gray-500">{project.status}</p>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-white">${project.budget?.toLocaleString() || '0'}</td>
+                    <td className="py-3 px-4">
+                      <span className={`${index % 2 === 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {index % 2 === 0 ? '+' : '-'}{Math.random().toFixed(2)}%
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-white">${(project.budget * 1.3)?.toLocaleString() || '0'}</td>
+                    <td className="py-3 px-4">
+                      <div className="h-6 w-20 rounded overflow-hidden bg-dark-400">
+                        <div 
+                          className={`h-full ${index % 2 === 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                          style={{ width: `${Math.random() * 100}%` }}
+                        ></div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Watchlist Section */}
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-white">Watchlist</h2>
+          <div className="flex space-x-2">
+            <button className="bg-dark-300 hover:bg-dark-400 text-gray-400 py-1 px-3 rounded-md text-sm transition-colors">Most Viewed</button>
+            <button className="bg-dark-300 hover:bg-dark-400 text-gray-400 py-1 px-3 rounded-md text-sm transition-colors">Gainers</button>
+            <button className="bg-dark-300 hover:bg-dark-400 text-gray-400 py-1 px-3 rounded-md text-sm transition-colors">Losers</button>
+          </div>
+        </div>
+
+        <div className="bg-dark-100 rounded-xl p-6 border border-dark-300">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Watchlist Items */}
+            {tasks.slice(0, 3).map((task, index) => (
+              <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-dark-200 hover:bg-dark-300 transition-colors">
+                <div className="flex items-center">
+                  <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-2 rounded mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-white">{task.title}</h3>
+                    <p className="text-xs text-gray-500">Task #{task.id}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-4" role="feed" aria-busy="false">
-              {recentActivity && recentActivity.length > 0 ? (
-                recentActivity.map((activity: any) => (
-                  <article 
-                    key={activity.id} 
-                    className="flex items-start"
-                    aria-label={`${activity.userName} ${activity.action} ${activity.entityType} ${activity.entityName}`}
-                  >
-                    <div 
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm mr-3 ${
-                        activity.action === 'created' ? 'bg-green-500' : 
-                        activity.action === 'updated' ? 'bg-blue-500' : 
-                        activity.action === 'deleted' ? 'bg-red-500' :
-                        activity.action === 'completed' ? 'bg-purple-500' : 'bg-gray-500'
-                      }`}
-                      aria-hidden="true"
-                    >
-                      {activity.userName.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm">
-                        <span className="sr-only">Activity:</span>
-                        {activity.userName} {activity.action} {activity.entityType} 
-                        <span className="text-[#8B5CF6]"> {activity.entityName}</span>
-                        {activity.projectName && (
-                          <>
-                            <span className="text-gray-400"> in project </span>
-                            <span className="text-[#8B5CF6]">{activity.projectName}</span>
-                          </>
-                        )}
-                      </p>
-                      <time dateTime={activity.timestamp} className="text-xs text-gray-400">
-                        {new Date(activity.timestamp).toLocaleString()}
-                      </time>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <p className="text-gray-400" role="status">No recent activity.</p>
-              )}
-            </div>
-          )}
-          
-          <div className="mt-4 text-center">
-            <Link 
-              href="/dashboard/activity" 
-              className="text-[#8B5CF6] hover:text-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] rounded-md py-1 px-2 text-sm inline-block transition-colors"
-              aria-label="View all activity"
-            >
-              View all activity
-            </Link>
+                <div className="text-right">
+                  <p className="text-white font-medium">${Math.floor(Math.random() * 100).toFixed(2)}</p>
+                  <p className={`text-xs ${index % 2 === 0 ? 'text-red-400' : 'text-green-400'}`}>
+                    {index % 2 === 0 ? '-' : '+'}{Math.random().toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-        </section>
-        
-        <section className="bg-[#111827] rounded-lg p-6" aria-labelledby="tasks-overview-heading">
-          <div className="flex justify-between items-center mb-4">
-            <h2 id="tasks-overview-heading" className="font-semibold text-xl">Tasks Overview</h2>
-            <select 
-              className="bg-[#1F2937] border border-gray-600 rounded text-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
-              aria-label="Filter tasks"
-            >
-              <option>All Tasks</option>
-              <option>Overdue</option>
-              <option>Completed</option>
-            </select>
-          </div>
-          
-          {isLoadingAnalytics ? (
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="animate-pulse">
-                  <div className="flex justify-between text-sm mb-1">
-                    <div className="h-4 bg-gray-700 rounded w-1/3"></div>
-                    <div className="h-4 bg-gray-700 rounded w-12"></div>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div className="bg-gray-600 h-2 rounded-full" style={{ width: '30%' }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm">Total Tasks</span>
-                  <span className="text-sm">{analytics?.tasks.total || 0}</span>
-                </div>
-                <div className="w-full bg-gray-700 rounded-full h-1.5">
-                  <div className="bg-[#8B5CF6] h-1.5 rounded-full" style={{ width: '100%' }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm">Completed</span>
-                  <span className="text-sm">{analytics?.tasks.completed || 0}</span>
-                </div>
-                <div className="w-full bg-gray-700 rounded-full h-1.5">
-                  <div className="bg-green-500 h-1.5 rounded-full" style={{ 
-                    width: `${analytics ? (analytics.tasks.completed / analytics.tasks.total) * 100 : 0}%` 
-                  }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm">In Progress</span>
-                  <span className="text-sm">{analytics?.tasks.inProgress || 0}</span>
-                </div>
-                <div className="w-full bg-gray-700 rounded-full h-1.5">
-                  <div className="bg-blue-500 h-1.5 rounded-full" style={{ 
-                    width: `${analytics ? (analytics.tasks.inProgress / analytics.tasks.total) * 100 : 0}%` 
-                  }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm">Overdue</span>
-                  <span className="text-sm text-red-500">{analytics?.tasks.overdue || 0}</span>
-                </div>
-                <div className="w-full bg-gray-700 rounded-full h-1.5">
-                  <div className="bg-red-500 h-1.5 rounded-full" style={{ 
-                    width: `${analytics ? (analytics.tasks.overdue / analytics.tasks.total) * 100 : 0}%` 
-                  }}></div>
-                </div>
-              </div>
-              
-              <div className="mt-4 pt-4 border-t border-gray-700">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Completion Rate</span>
-                  <span className="text-sm font-medium text-green-500">{analytics?.tasks.completion || 0}%</span>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div className="mt-4 text-center">
-            <Link 
-              href="/dashboard/tasks" 
-              className="text-[#8B5CF6] hover:text-[#a78bfa] focus:outline-none focus:ring-2 focus:ring-[#8B5CF6] rounded-md py-1 px-2 text-sm inline-block transition-colors"
-              aria-label="View all tasks"
-            >
-              View all tasks
-            </Link>
-          </div>
-        </section>
+        </div>
       </div>
     </main>
   );
@@ -665,7 +649,7 @@ const ClientDashboard = () => {
             <div className="flex items-start">
               <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-white mr-3">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M18 10a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
                 </svg>
               </div>
               <div>
@@ -685,7 +669,7 @@ const ClientDashboard = () => {
             className="bg-[#8B5CF6] hover:bg-opacity-90 transition px-4 py-2 rounded text-white text-sm inline-flex items-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-1.414-1.414L10.586 9H7a1 1 0 110-2h3.586l-1.293-1.293a1 1 0 00-1.414 1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L9.414 13H13a1 1 0 110 2H9.414l1.293 1.293a1 1 0 001.414 1.414l-3-3a1 1 0 10-1.414-1.414l3-3a1 1 0 001.414 1.414z" clipRule="evenodd" />
             </svg>
             Create Support Ticket
           </Link>

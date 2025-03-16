@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
   CalendarDays,
@@ -12,6 +13,8 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,6 +23,23 @@ import { signOut } from "next-auth/react";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  
+  // Load the collapsed state from localStorage on component mount
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState !== null) {
+      setCollapsed(savedState === 'true');
+    } else {
+      // Default to expanded on larger screens, collapsed on small screens
+      setCollapsed(window.innerWidth < 1024);
+    }
+  }, []);
+  
+  // Save the collapsed state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', String(collapsed));
+  }, [collapsed]);
 
   const navItems = [
     {
@@ -39,7 +59,7 @@ export function Sidebar() {
     },
     {
       title: "Team",
-      href: "/dashboard/team",
+      href: "/dashboard/users",
       icon: <Users className="h-5 w-5" />,
     },
     {
@@ -60,16 +80,33 @@ export function Sidebar() {
   ];
 
   return (
-    <div className="group flex h-screen w-16 flex-col items-center justify-between border-r bg-background py-3 transition-all duration-300 hover:w-64 lg:w-64">
+    <div className={cn(
+      "relative flex h-screen flex-col items-center justify-between border-r bg-background py-3 transition-all duration-300",
+      collapsed ? "w-16" : "w-64"
+    )}>
+      {/* Toggle button */}
+      <button 
+        className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border bg-background shadow-md focus:outline-none"
+        onClick={() => setCollapsed(!collapsed)}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {collapsed ? 
+          <ChevronRight className="h-3 w-3" /> : 
+          <ChevronLeft className="h-3 w-3" />
+        }
+      </button>
+      
       <div className="flex w-full flex-col items-center px-2">
         <div className="flex h-16 w-full items-center justify-center px-2">
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary">
               <span className="text-lg font-bold text-primary-foreground">PP</span>
             </div>
-            <span className="ml-2 hidden text-xl font-bold group-hover:inline-block lg:inline-block">
-              ProjectPulse
-            </span>
+            {!collapsed && (
+              <span className="ml-2 text-xl font-bold">
+                ProjectPulse
+              </span>
+            )}
           </Link>
         </div>
 
@@ -87,9 +124,11 @@ export function Sidebar() {
                 <div className="flex w-10 items-center justify-center">
                   {item.icon}
                 </div>
-                <span className="ml-2 hidden group-hover:inline-block lg:inline-block">
-                  {item.title}
-                </span>
+                {!collapsed && (
+                  <span className="ml-2">
+                    {item.title}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
@@ -100,24 +139,30 @@ export function Sidebar() {
         <Button
           variant="ghost"
           className="flex h-10 w-full items-center justify-start px-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          onClick={() => window.location.href = '/dashboard/settings'}
         >
           <div className="flex w-10 items-center justify-center">
             <Settings className="h-5 w-5" />
           </div>
-          <span className="ml-2 hidden group-hover:inline-block lg:inline-block">
-            Settings
-          </span>
+          {!collapsed && (
+            <span className="ml-2">
+              Settings
+            </span>
+          )}
         </Button>
         <Button
           variant="ghost"
           className="flex h-10 w-full items-center justify-start px-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          onClick={() => window.location.href = '/dashboard/help'}
         >
           <div className="flex w-10 items-center justify-center">
             <HelpCircle className="h-5 w-5" />
           </div>
-          <span className="ml-2 hidden group-hover:inline-block lg:inline-block">
-            Help
-          </span>
+          {!collapsed && (
+            <span className="ml-2">
+              Help
+            </span>
+          )}
         </Button>
         <Button
           variant="ghost"
@@ -127,9 +172,11 @@ export function Sidebar() {
           <div className="flex w-10 items-center justify-center">
             <LogOut className="h-5 w-5" />
           </div>
-          <span className="ml-2 hidden group-hover:inline-block lg:inline-block">
-            Logout
-          </span>
+          {!collapsed && (
+            <span className="ml-2">
+              Logout
+            </span>
+          )}
         </Button>
 
         <div className="my-4 flex items-center gap-2 px-2">
@@ -137,12 +184,14 @@ export function Sidebar() {
             <AvatarImage src="/avatars/01.png" alt="Avatar" />
             <AvatarFallback>RS</AvatarFallback>
           </Avatar>
-          <div className="hidden group-hover:block lg:block">
-            <p className="text-sm font-medium">Rajesh Sharma</p>
-            <p className="text-xs text-muted-foreground">Admin</p>
-          </div>
+          {!collapsed && (
+            <div>
+              <p className="text-sm font-medium">Rajesh Sharma</p>
+              <p className="text-xs text-muted-foreground">Admin</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-} 
+}

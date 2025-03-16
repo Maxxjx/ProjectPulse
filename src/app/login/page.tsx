@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation';
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState('demo@projectpulse.com');
-  const [password, setPassword] = useState('demo1234');
+  const [email, setEmail] = useState('admin@projectpulse.com');
+  const [password, setPassword] = useState('admin1234');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -42,27 +42,31 @@ export default function Login() {
     setIsLoading(true);
     setError('');
     let demoEmail: string;
-    let demoPassword = 'demo1234';
+    let demoPassword: string;
 
     switch (role) {
       case 'admin':
         demoEmail = 'admin@projectpulse.com';
+        demoPassword = 'admin1234';
         break;
       case 'team':
-        demoEmail = 'team@projectpulse.com';
+        demoEmail = 'priya@projectpulse.com'; // Using actual seeded team user
+        demoPassword = 'team1234';
         break;
       case 'client':
-        demoEmail = 'client@projectpulse.com';
+        demoEmail = 'arjun@tataprojects.com'; // Using actual seeded client user
+        demoPassword = 'client1234';
         break;
       default:
         demoEmail = 'demo@projectpulse.com';
+        demoPassword = 'demo1234';
     }
 
     try {
       const result = await signIn('credentials', {
         redirect: false,
         email: demoEmail,
-        password: role === 'demo' ? 'demo1234' : `${role}1234`
+        password: demoPassword
       });
 
       if (result?.error) {

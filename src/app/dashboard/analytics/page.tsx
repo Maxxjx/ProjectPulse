@@ -99,25 +99,34 @@ export default function AnalyticsPage() {
   // Loading states
   const isLoading = projectsLoading || tasksLoading || timeEntriesLoading || usersLoading;
 
+  // Ensure timeEntries is an array before filtering
+  const timeEntriesArray = Array.isArray(timeEntries) ? timeEntries : (timeEntries?.data ? timeEntries.data : []);
+  
   // Filter data based on date range
-  const filteredTimeEntries = timeEntries?.filter((entry: any) => {
+  const filteredTimeEntries = timeEntriesArray.filter((entry: any) => {
     if (!dateRange?.from || !dateRange?.to) return true;
     const entryDate = new Date(entry.date);
     return entryDate >= dateRange.from && entryDate <= dateRange.to;
-  }) || [];
+  });
 
+  // Ensure projects is an array before filtering
+  const projectsArray = Array.isArray(projects) ? projects : (projects?.data ? projects.data : []);
+  
   // Filter projects based on user role if needed
-  const roleFilteredProjects = projects?.filter((project: any) => {
+  const roleFilteredProjects = projectsArray.filter((project: any) => {
     // For client role, only show their projects
     if (userRole === 'client' && session?.user?.id) {
       return project.clientId === session.user.id;
     }
     // Admin and team see all projects
     return true;
-  }) || [];
+  });
 
+  // Ensure tasks is an array before filtering
+  const tasksArray = Array.isArray(tasks) ? tasks : (tasks?.data ? tasks.data : []);
+  
   // Filter tasks based on user role if needed
-  const roleFilteredTasks = tasks?.filter((task: any) => {
+  const roleFilteredTasks = tasksArray.filter((task: any) => {
     // For team members, prioritize their assigned tasks
     if (userRole === 'team' && session?.user?.id) {
       return task.assigneeId === session.user.id;
@@ -128,7 +137,7 @@ export default function AnalyticsPage() {
     }
     // Admin sees all tasks
     return true;
-  }) || [];
+  });
 
   return (
     <div className="flex flex-col gap-5 w-full">

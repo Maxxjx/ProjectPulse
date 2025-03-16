@@ -34,28 +34,50 @@ export default function NotificationDropdown({ onClose }: { onClose: () => void 
   }, [onClose]);
 
   const handleNotificationClick = (notification: Notification) => {
-    if (!notification.read) {
+    if (!notification.isRead) {
       markAsReadMutation.mutate(notification.id);
     }
     
-    if (notification.actionUrl) {
-      router.push(notification.actionUrl);
+    // Handle navigation based on notification type
+    if (notification.entityType && notification.entityId) {
+      let targetUrl = '';
+      
+      switch (notification.entityType) {
+        case 'task':
+          targetUrl = `/dashboard/tasks/${notification.entityId}`;
+          break;
+        case 'project':
+          targetUrl = `/dashboard/projects/${notification.entityId}`;
+          break;
+        case 'comment':
+          // For comments, navigate to the associated task or project
+          targetUrl = `/dashboard/tasks/${notification.entityId}`;
+          break;
+        default:
+          targetUrl = '/dashboard';
+      }
+      
+      if (targetUrl) {
+        router.push(targetUrl);
+      }
     }
     
     onClose();
   };
 
   const handleMarkAllAsRead = () => {
-    markAllAsReadMutation.mutate();
+    if (notifications && notifications.filter(n => !n.isRead).length > 0) {
+      markAllAsReadMutation.mutate();
+    }
   };
 
-  const handleDeleteNotification = (e: React.MouseEvent, notificationId: number) => {
+  const handleDeleteNotification = (e: React.MouseEvent, notificationId: string) => {
     e.stopPropagation();
     deleteNotificationMutation.mutate(notificationId);
   };
 
   // Get notification icon based on type
-  const getNotificationIcon = (type: NotificationType) => {
+  const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'task_assigned':
         return (
@@ -149,7 +171,13 @@ export default function NotificationDropdown({ onClose }: { onClose: () => void 
           </div>
         ) : isError ? (
           <div className="py-8 text-center text-gray-400">
-            Failed to load notifications
+            <p>Failed to load notifications</p>
+            <button 
+              className="mt-2 text-xs text-[#8B5CF6] hover:text-[#A78BFA]"
+              onClick={() => window.location.reload()}
+            >
+              Try again
+            </button>
           </div>
         ) : notifications && notifications.length > 0 ? (
           notifications.map((notification) => (
@@ -157,21 +185,21 @@ export default function NotificationDropdown({ onClose }: { onClose: () => void 
               key={notification.id}
               onClick={() => handleNotificationClick(notification)}
               className={`flex items-start p-4 hover:bg-[#1F2937] cursor-pointer ${
-                !notification.read ? 'bg-[#1F2937]/50' : ''
+                !notification.isRead ? 'bg-[#1F2937]/50' : ''
               }`}
             >
               <div className="mr-3 flex-shrink-0 mt-1">
                 {getNotificationIcon(notification.type)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm ${!notification.read ? 'font-medium' : ''}`}>
+                <p className={`text-sm ${!notification.isRead ? 'font-medium' : ''}`}>
                   {notification.title}
                 </p>
                 <p className="text-xs text-gray-400 mt-1 line-clamp-2">
                   {notification.message}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {formatNotificationDate(notification.createdAt)}
+                  {formatNotificationDate(notification.createdAt.toString())}
                 </p>
               </div>
               <button

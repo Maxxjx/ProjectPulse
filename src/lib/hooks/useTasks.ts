@@ -2,25 +2,44 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Task } from '@/lib/data/types';
+import { tasks as mockTasks } from '@/lib/data/mockData';
 
 // GET all tasks
 export function useTasks(projectId?: number, assigneeId?: string) {
   const queryParams = new URLSearchParams();
+  
   if (projectId) queryParams.append('projectId', projectId.toString());
-  if (assigneeId) queryParams.append('assigneeId', assigneeId);
+  if (assigneeId) queryParams.append('assigneeId', assigneeId.toString());
   
   const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : '';
   
   return useQuery({
     queryKey: ['tasks', { projectId, assigneeId }],
     queryFn: async () => {
-      const response = await fetch(`/api/tasks${queryStr}`);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch tasks');
+      try {
+        const response = await fetch(`/api/tasks${queryStr}`);
+        if (!response.ok) {
+          throw new Error('API error');
+        }
+        const data = await response.json();
+        // API is directly returning the tasks array, not wrapped in a tasks property
+        return Array.isArray(data) ? data : (data.tasks || []);
+      } catch (error) {
+        console.warn('Falling back to mock data for tasks:', error);
+        
+        // Filter mockTasks based on params if needed
+        let filteredTasks = [...mockTasks];
+        
+        if (projectId) {
+          filteredTasks = filteredTasks.filter(t => t.projectId === projectId);
+        }
+        
+        if (assigneeId) {
+          filteredTasks = filteredTasks.filter(t => t.assigneeId === assigneeId);
+        }
+        
+        return filteredTasks;
       }
-      const data = await response.json();
-      return data.tasks;
     }
   });
 }
@@ -30,13 +49,18 @@ export function useTask(id: number) {
   return useQuery({
     queryKey: ['tasks', id],
     queryFn: async () => {
-      const response = await fetch(`/api/tasks/${id}`);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch task');
+      try {
+        const response = await fetch(`/api/tasks/${id}`);
+        if (!response.ok) {
+          throw new Error('API error');
+        }
+        const data = await response.json();
+        return data.task;
+      } catch (error) {
+        console.warn(`Falling back to mock data for task ${id}:`, error);
+        // Find the task in the mock data
+        return mockTasks.find(t => t.id === id);
       }
-      const data = await response.json();
-      return data.task;
     },
     enabled: !!id
   });

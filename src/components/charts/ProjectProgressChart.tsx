@@ -19,6 +19,24 @@ const ProjectProgressChart: React.FC<ProjectProgressChartProps> = ({
   description = 'Visual overview of project completion status'
 }) => {
   
+  // Check if projects data exists
+  if (!projects || projects.length === 0) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center flex-col p-6">
+          <div className="text-muted-foreground text-center p-8">
+            <p className="mb-2 font-semibold">No project data available</p>
+            <p className="text-sm">Projects will appear here once data is available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   // Format data for the chart
   const formattedData = projects.map(project => ({
     x: project.name,
