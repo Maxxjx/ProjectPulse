@@ -200,6 +200,11 @@ export const projectService = {
       });
       
       return projects.map(project => ({
+        deadline: project.deadline?.toISOString() || "",
+        team: [],
+        priority: "low",
+        createdAt: project.createdAt.toISOString(),
+        updatedAt: project.updatedAt.toISOString(),
         id: project.id,
         name: project.name,
         description: project.description,

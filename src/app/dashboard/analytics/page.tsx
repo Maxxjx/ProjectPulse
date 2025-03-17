@@ -100,35 +100,37 @@ export default function AnalyticsPage() {
   const isLoading = projectsLoading || tasksLoading || timeEntriesLoading || usersLoading;
 
   // Filter data based on date range
-  const filteredTimeEntries = timeEntries?.filter((entry: any) => {
+  const filteredTimeEntries = Array.isArray(timeEntries) ? timeEntries.filter((entry: any) => {
     if (!dateRange?.from || !dateRange?.to) return true;
     const entryDate = new Date(entry.date);
     return entryDate >= dateRange.from && entryDate <= dateRange.to;
-  }) || [];
-
-  // Filter projects based on user role if needed
-  const roleFilteredProjects = projects?.filter((project: any) => {
-    // For client role, only show their projects
+  }) : [];
+  
+  
+  const roleFilteredProjects = Array.isArray(projects) ? projects.filter((project: any) => {
+    // For client role, only show their projects.
     if (userRole === 'client' && session?.user?.id) {
       return project.clientId === session.user.id;
     }
     // Admin and team see all projects
     return true;
-  }) || [];
+  }) : [];
+  
 
-  // Filter tasks based on user role if needed
-  const roleFilteredTasks = tasks?.filter((task: any) => {
-    // For team members, prioritize their assigned tasks
-    if (userRole === 'team' && session?.user?.id) {
-      return task.assigneeId === session.user.id;
-    }
-    // For clients, only show tasks for their projects
-    if (userRole === 'client' && session?.user?.id) {
-      return roleFilteredProjects.some((p: any) => p.id === task.projectId);
-    }
-    // Admin sees all tasks
-    return true;
-  }) || [];
+ // Filter tasks based on user role if needed
+ const roleFilteredTasks = Array.isArray(tasks) ? tasks.filter((task: any) => {
+  if (userRole === 'team' && session?.user?.id) {
+    return task.assigneeId === session.user.id;
+  }
+  if (userRole === 'client' && session?.user?.id) {
+    return roleFilteredProjects.some((p: any) => p.id === task.projectId);
+  }
+  return true;
+}) : [];
+
+  const safeFilteredTimeEntries = filteredTimeEntries || [];
+  const safeRoleFilteredProjects = roleFilteredProjects || [];
+  const safeRoleFilteredTasks = roleFilteredTasks || [];
 
   return (
     <div className="flex flex-col gap-5 w-full">
@@ -150,9 +152,9 @@ export default function AnalyticsPage() {
       {/* Role-based analytics dashboard */}
       <RoleBasedAnalytics
         role={userRole}
-        projects={roleFilteredProjects}
-        tasks={roleFilteredTasks}
-        timeEntries={filteredTimeEntries}
+        projects={safeRoleFilteredProjects}
+        tasks={safeRoleFilteredTasks}
+        timeEntries={safeFilteredTimeEntries}
         users={users || []}
         isLoading={isLoading}
       />
@@ -177,9 +179,9 @@ export default function AnalyticsPage() {
                 <div className="pb-2 border-b">
                   <h3 className="font-medium">Project Health</h3>
                   <p className="text-sm text-muted-foreground">
-                    {roleFilteredProjects.filter((p: any) => p.status === 'COMPLETED').length} completed, 
-                    {roleFilteredProjects.filter((p: any) => p.status === 'IN_PROGRESS').length} in progress, 
-                    {roleFilteredProjects.filter((p: any) => p.status === 'ON_HOLD').length} on hold
+                    {safeRoleFilteredProjects.filter((p: any) => p.status === 'COMPLETED').length} completed, 
+                    {safeRoleFilteredProjects.filter((p: any) => p.status === 'IN_PROGRESS').length} in progress, 
+                    {safeRoleFilteredProjects.filter((p: any) => p.status === 'ON_HOLD').length} on hold
                   </p>
                 </div>
 
@@ -187,8 +189,8 @@ export default function AnalyticsPage() {
                 <div className="pb-2 border-b">
                   <h3 className="font-medium">Task Completion Rate</h3>
                   <p className="text-sm text-muted-foreground">
-                    {Math.round((roleFilteredTasks.filter((t: any) => t.status === 'COMPLETED').length / 
-                    (roleFilteredTasks.length || 1)) * 100)}% of tasks completed
+                    {Math.round((safeRoleFilteredTasks.filter((t: any) => t.status === 'COMPLETED').length / 
+                    (safeRoleFilteredTasks.length || 1)) * 100)}% of tasks completed
                   </p>
                 </div>
 
@@ -196,7 +198,7 @@ export default function AnalyticsPage() {
                 {(userRole === 'admin' || userRole === 'team') && (
                   <div className="pb-2 border-b">
                     <h3 className="font-medium">Time Utilization</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">                  
                       {Math.round(filteredTimeEntries.reduce((sum: number, entry: any) => {
                         const hours = 'hours' in entry 
                           ? Number(entry.hours) 
@@ -212,8 +214,8 @@ export default function AnalyticsPage() {
                   <div className="pb-2">
                     <h3 className="font-medium">Budget Status</h3>
                     <p className="text-sm text-muted-foreground">
-                      Total budget: ${roleFilteredProjects.reduce((sum: number, p: any) => sum + (p.budget || 0), 0).toLocaleString()}, 
-                      Spent: ${roleFilteredProjects.reduce((sum: number, p: any) => sum + (p.actualCost || 0), 0).toLocaleString()}
+                      Total budget: ${safeRoleFilteredProjects.reduce((sum: number, p: any) => sum + (p.budget || 0), 0).toLocaleString()}, 
+                      Spent: ${safeRoleFilteredProjects.reduce((sum: number, p: any) => sum + (p.actualCost || 0), 0).toLocaleString()}
                     </p>
                   </div>
                 )}

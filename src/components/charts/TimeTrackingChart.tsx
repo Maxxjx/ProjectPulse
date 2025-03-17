@@ -38,9 +38,15 @@ const TimeTrackingChart: React.FC<TimeTrackingChartProps> = ({
   });
 
   const userMap = new Map<string, User>();
+
+if (Array.isArray(users)) {
   users.forEach(user => {
     userMap.set(user.id, user);
   });
+} else {
+  console.error('Expected users to be an array but got:', users);
+}
+
 
   // Group time entries by project
   const entriesByProject = new Map<string, typeof entriesWithHours>();

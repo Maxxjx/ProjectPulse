@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { projectService } from '@/lib/data/dataService';
+import { projectService } from '@/lib/data/projectService';
 import { z } from 'zod';
 
 // Validation schema for creating a project
@@ -28,14 +28,13 @@ export async function GET(request: NextRequest) {
     
     let projects;
     
-    if (clientId) {
+    if (clientId) { 
       projects = await projectService.getProjectsByClient(clientId);
     } else if (teamMemberId) {
       projects = await projectService.getProjectsByTeamMember(teamMemberId);
     } else {
       projects = await projectService.getProjects();
-    }
-    
+    }    
     return NextResponse.json({ projects }, { status: 200 });
   } catch (error) {
     console.error('Error in GET /api/projects:', error);

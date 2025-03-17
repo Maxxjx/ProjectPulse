@@ -105,6 +105,8 @@ export interface Attachment {
 }
 
 export interface TimeEntry {
+  task: any;
+  projectId: any;
   id: number;
   taskId: number;
   userId: string;
