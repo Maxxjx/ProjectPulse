@@ -9,22 +9,22 @@ Create utility functions that simulate CRUD operations on the mock data.
 Finalize data requirements via the mock implementation, then migrate to a real database.
 Phases to Implement:
 
-Phase 1: Minimal Viable Product (MVP) [Completed]
+Phase 1: Minimal Viable Product (MVP) 
 
 Build a public landing page to advertise the product.
 Include key features, testimonials, and a 'View Demo' button.
 Ensure that clicking 'View Demo' redirects users to the login page with pre-populated sample credentials.
-Phase 2: Authentication & Basic Dashboard [Completed]
+Phase 2: Authentication & Basic Dashboard 
 
 Integrate NextAuth.js for login functionality (email and password based).
 Implement JWT-based authentication.
 Redirect authenticated users to a basic dashboard page.
-Phase 3: Role-Based Dashboard Expansion [Completed]
+Phase 3: Role-Based Dashboard Expansion 
 
 Enhance the dashboard for multi-role access (admin, team, client).
 Create role-specific pages or routes with customized content.
 Implement a collapsible sidebar and a top header featuring the PMS logo, notifications, and user profile.
-Phase 4: UI Consistency and Design System [Completed]
+Phase 4: UI Consistency and Design System 
 
 Implement a centralized theme system:
 - Create a theme.ts file with color palette, typography, spacing, shadows, and more.
@@ -46,7 +46,7 @@ Dashboard Layout Improvements:
 - Implement DataTable for consistent data presentation.
 - Add proper mobile responsiveness and animations.
 
-Phase 5: Core Features & API Integration [Completed]
+Phase 5: Core Features & API Integration 
 
 Data Management:
 - Define comprehensive TypeScript interfaces for all data models (User, Project, Task, etc.).
@@ -63,7 +63,7 @@ Data Fetching & Validation:
 - Implement React Query for efficient data fetching and caching.
 - Use Zod for validating API requests and responses.
 
-Phase 6: Enhanced Dashboard Features [In Progress]
+Phase 6: Enhanced Dashboard Features 
 
 Implement advanced chart visualizations:
 - Project progress tracking charts
@@ -126,13 +126,79 @@ Documentation:
 - Detailed technical documentation including design diagrams and user guides
 - Developer setup guide, deployment instructions, and contribution guidelines.
 
-Next Steps:
-1. Complete the Enhanced Dashboard Features with improved data visualizations
-2. Implement Kanban board for task management
-3. Add in-app notification system
-4. Set up email notifications for important events
-5. Add file upload and document management
-6. Implement real-time collaboration features
+user work flow:
+graph TD
+    subgraph Authentication
+        A[User Visits Site] --> B{Has Account?}
+        B -->|No| C[Sign Up Form]
+        B -->|Yes| D[Login Form]
+        C --> E[Create Account]
+        E --> F[Verify Email]
+        F --> G[Set Role & Permissions]
+        G --> H[Login]
+        D --> H
+        H --> I{Role Check}
+        I -->|Admin| J[Admin Dashboard]
+        I -->|Team Member| K[Team Dashboard]
+        I -->|Client| L[Client Dashboard]
+    end
+
+    subgraph Dashboard
+        J --> M[View All Projects]
+        K --> N[View Assigned Projects]
+        L --> O[View Client Projects]
+        M --> P[Project Analytics]
+        N --> P
+        O --> P
+        P --> Q[Real-time Charts]
+        P --> R[Status Widgets]
+        P --> S[Timeline View]
+    end
+
+    subgraph Project Management
+        M --> T[Create New Project]
+        M --> U[Edit Project]
+        M --> V[Delete Project]
+        N --> W[View Project Details]
+        O --> W
+        W --> X[Kanban Board]
+        X --> Y[Create Task]
+        X --> Z[Edit Task]
+        X --> AA[Delete Task]
+        X --> AB[Drag-Drop Tasks]
+        Y --> AC[Assign Team Members]
+        Z --> AC
+        AC --> AD[Set Deadlines]
+        AD --> AE[Track Time]
+    end
+
+    subgraph Data Visualization
+        P --> AF[Team Performance Charts]
+        P --> AG[Deadline Tracking]
+        P --> AH[Resource Allocation]
+        AF --> AI[Export Reports]
+        AG --> AI
+        AH --> AI
+    end
+
+    subgraph PWA Features
+        A --> AJ[Install App Prompt]
+        AJ -->|Accept| AK[Add to Home Screen]
+        AJ -->|Decline| A
+        AK --> AL[Offline Access]
+        AL --> AM[Push Notifications]
+        AM --> AN[Sync When Online]
+    end
+
+    subgraph Responsive Design
+        A --> AO{Device Detection}
+        AO -->|Desktop| AP[Desktop Layout]
+        AO -->|Tablet| AQ[Tablet Layout]
+        AO -->|Mobile| AR[Mobile Layout]
+        AP --> AS[Dark Theme with Purple Accents]
+        AQ --> AS
+        AR --> AS
+    end
 
 Requirements:
 
