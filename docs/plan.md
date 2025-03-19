@@ -1,209 +1,208 @@
-Overview:
-Develop "ProjectPulse" – a high-performance, scalable, and secure Project Management System using Next.js 14 (with the App Router) and modern web technologies. The system must have multi-role authentication (admin, team, client), robust API operations, dynamic dashboards, and real-time analytics—all wrapped in a sleek dark-themed UI (primary: #8B5CF6, background: #1F2937).
+# ProjectPulse Development Plan
 
-Development Approach:
+## Project Overview
+ProjectPulse is a high-performance project management system built with Next.js 14 (App Router) featuring multi-role authentication, real-time analytics, and a dark-themed UI (primary: #8B5CF6, background: #1F2937).
 
-Mock Data First:
-Start with TypeScript interfaces and a mock data store for all entities (Users, Projects, Tasks, etc.).
-Create utility functions that simulate CRUD operations on the mock data.
-Finalize data requirements via the mock implementation, then migrate to a real database.
-Phases to Implement:
+## Core Architecture
+- **Frontend**: Next.js 14 (App Router) with TypeScript
+- **Backend**: Next.js API routes
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: NextAuth.js with JWT
+- **State Management**: React Query + Context API
+- **UI Framework**: Tailwind CSS + Shadcn UI components
 
-Phase 1: Minimal Viable Product (MVP) 
+## Phase 1: Core Foundation (MVP)
 
-Build a public landing page to advertise the product.
-Include key features, testimonials, and a 'View Demo' button.
-Ensure that clicking 'View Demo' redirects users to the login page with pre-populated sample credentials.
-Phase 2: Authentication & Basic Dashboard 
+### 1. Data Models & Schema
+```typescript
+// Essential TypeScript interfaces
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'team' | 'client';
+  // Other fields
+}
 
-Integrate NextAuth.js for login functionality (email and password based).
-Implement JWT-based authentication.
-Redirect authenticated users to a basic dashboard page.
-Phase 3: Role-Based Dashboard Expansion 
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  status: 'planning' | 'in-progress' | 'completed';
+  startDate: Date;
+  endDate: Date;
+  // Other fields
+}
 
-Enhance the dashboard for multi-role access (admin, team, client).
-Create role-specific pages or routes with customized content.
-Implement a collapsible sidebar and a top header featuring the PMS logo, notifications, and user profile.
-Phase 4: UI Consistency and Design System 
+interface Task {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string;
+  status: 'todo' | 'in-progress' | 'review' | 'done';
+  assigneeId: string | null;
+  dueDate: Date;
+  // Other fields
+}
+```
 
-Implement a centralized theme system:
-- Create a theme.ts file with color palette, typography, spacing, shadows, and more.
-- Define CSS variables for consistent theming across light/dark modes.
-- Add utility classes for common styling patterns.
+### 2. Authentication System
+- Implement Next-Auth setup with JWT
+- Create login/register pages
+- Setup role-based authorization middleware
+- Implement protected routes
 
-Improve core UI components:
-- Update Button component with consistent theming and variants.
-- Enhance Card component with improved styling and hover effects.
-- Create specialized DashboardCard component for metric displays.
-- Update Input component to use the theme system.
-- Create consistent Table component with proper styling.
-- Implement ChartWrapper with theme-consistent chart styling.
+### 3. Basic Project Management
+- Projects CRUD operations
+- Tasks CRUD operations
+- Basic user assignment to projects/tasks
+- Simple status updates
 
-Dashboard Layout Improvements:
-- Update dashboard layout with consistent navigation.
-- Create DashboardHeader and DashboardTabs components.
-- Add DashboardEmptyState for better UX with empty data.
-- Implement DataTable for consistent data presentation.
-- Add proper mobile responsiveness and animations.
+### 4. Minimal UI
+- Login/Register pages
+- Basic dashboard layout
+- Project list view
+- Task list view
+- Simple forms for creating/editing
 
-Phase 5: Core Features & API Integration 
+## Phase 2: Essential Features
 
-Data Management:
-- Define comprehensive TypeScript interfaces for all data models (User, Project, Task, etc.).
-- Set up a mock data store with sample data for projects, tasks, users, etc.
-- Develop mock service functions to simulate CRUD operations.
-- Create hooks for data fetching (useUsers, useProjects, useTasks, etc.)
+### 1. Enhanced Project Management
+- Project details view with summary
+- Task Kanban board (drag-and-drop)
+- Task filters and search
+- Basic file attachments for projects/tasks
 
-API Development:
-- Create API endpoints under /api/auth/*, /api/projects/*, /api/tasks/*, /api/users/*, and /api/analytics/* for CRUD operations.
-- Implement proper error handling and authentication/authorization checks.
-- Add support for both mock data services and database operations.
+### 2.  Dashboards & UI Enhancements
+- Role-specific dashboards
+- Project progress charts
+- Task status distribution
+- Responsive design for mobile/tablet
 
-Data Fetching & Validation:
-- Implement React Query for efficient data fetching and caching.
-- Use Zod for validating API requests and responses.
+### 3.Team Collaboration
+- Task comments system
+- Task assignment notifications
+- Basic activity log
+- Team member list with roles
 
-Phase 6: Enhanced Dashboard Features 
+### 4. API Integration
+- Clean API architecture
+- Consistent error handling
+- Pagination for list endpoints
+- Filtering and sorting capabilities
 
-Implement advanced chart visualizations:
-- Project progress tracking charts
-- Budget comparison charts
-- Resource allocation visualizations
-- Time tracking analytics
+## Phase 3: Advanced Features
 
-Add interactive data displays:
-- Filterable and sortable data tables
-- Drag-and-drop capabilities for tasks
-- Interactive calendars for deadlines and milestones
+### 1. Analytics & Reporting
+- Project timeline visualization
+- Team performance metrics
+- Resource allocation charts
+- Custom report generation
 
-Implement role-specific dashboards:
-- Admin: Overall system analytics, user management stats
-- Team: Task assignments, productivity metrics
-- Client: Project status, budget tracking
+### 2. Enhanced Collaboration
+- Rich text editor for descriptions/comments
+- Advanced file management system
+- @mentions in comments
+- Task dependencies
 
-Phase 7: Enhanced Functionality
+### 3. UI/UX Improvements
+- Dark/light theme toggle
+- Customizable dashboard widgets
+- Improved navigation experience
+- Animations and transitions
 
-Enhance authentication:
-- Add password reset features
-- Implement secure session management
-- Support social login options
+### 4. Performance Optimizations
+- Implement caching strategies
+- Optimize API response times
+- Code splitting and lazy loading
+- Database query optimization
 
-Improve collaboration features:
-- Add a rich text editor for comments
-- Implement file sharing and document management
-- Create team chat or discussion threads
+## Phase 4: Enterprise Features
 
-Role-Specific Enhancements:
-- Admin: User and role management, project overviews, audit logs, and system analytics.
-- Client: Project progress tracking, budget monitoring, support ticket system, document sharing, and meeting scheduling.
-- Team: Task management, time tracking, document management, and collaboration features.
+### 1. Advanced Security
+- Two-factor authentication
+- Role-based access control (RBAC)
+- Audit logging
+- Session management
 
-Phase 8: Advanced Features & Optimizations
+### 2. Integrations
+- Calendar integration (Google, Outlook)
+- Email notifications
+- Webhook support
+- Third-party API integrations
 
-Implement a drag-and-drop Kanban board for streamlined task management.
-Enable customizable dashboard widgets with drag-and-drop and collapsible panels.
-Integrate built-in time tracking and produce productivity/billing reports.
-Set up automated in-app/email notifications for project updates and deadlines.
-Optimize the design for mobile-first experiences and add Progressive Web App (PWA) support.
-Develop robust API endpoints for third-party integrations (e.g., CRM, ERP).
+### 3. Advanced Project Management
+- Time tracking
+- Budget management
+- Resource capacity planning
+- Risk management
 
-Database Migration:
-- Transition from mock data to a real database.
-- Design proper database models, manage migrations, and optimize relationships.
-- Implement data integrity measures, backups, and recovery strategies.
+### 4. Progressive Web App
+- Offline support
+- Push notifications
+- Install to home screen
+- Background sync
 
-Performance & Deployment:
-- Ensure page load times under 2 seconds and target 99.9% uptime.
-- Achieve over 80% automated test coverage (unit, integration, end-to-end).
-- Configure a CI/CD pipeline using GitHub Actions, deploy on Vercel, and manage environment-specific configurations.
+## Implementation Guidelines for AI Agents
 
-Security Measures:
-- Enforce HTTPS, sanitize all inputs, implement rate limiting, and setup CSRF protection.
-- Conduct regular security audits.
+### Code Structure
+```
+src/
+├── app/
+│   ├── api/
+│   │   ├── auth/
+│   │   ├── projects/
+│   │   └── tasks/
+│   ├── auth/
+│   │   ├── login/
+│   │   ├── register/
+│   │   └── password-reset/
+│   ├── dashboard/
+│   │   ├── admin/
+│   │   ├── team/
+│   │   └── client/
+│   ├── projects/
+│   │   ├── [id]/
+│   │   └── new/
+│   └── tasks/
+│       ├── [id]/
+│       └── new/
+├── components/
+│   ├── ui/
+│   ├── layout/
+│   ├── forms/
+│   ├── projects/
+│   ├── tasks/
+│   └── dashboard/
+├── lib/
+│   ├── db/
+│   ├── auth/
+│   ├── api/
+│   └── utils/
+└── types/
+```
 
-Documentation:
-- Provide comprehensive API documentation (e.g., with Swagger)
-- Detailed technical documentation including design diagrams and user guides
-- Developer setup guide, deployment instructions, and contribution guidelines.
+### API Endpoints
+- `/api/auth/*` - Authentication routes
+- `/api/projects/*` - Project management
+- `/api/tasks/*` - Task management
+- `/api/users/*` - User operations
+- `/api/analytics/*` - Analytics and reporting
 
-user work flow:
-graph TD
-    subgraph Authentication
-        A[User Visits Site] --> B{Has Account?}
-        B -->|No| C[Sign Up Form]
-        B -->|Yes| D[Login Form]
-        C --> E[Create Account]
-        E --> F[Verify Email]
-        F --> G[Set Role & Permissions]
-        G --> H[Login]
-        D --> H
-        H --> I{Role Check}
-        I -->|Admin| J[Admin Dashboard]
-        I -->|Team Member| K[Team Dashboard]
-        I -->|Client| L[Client Dashboard]
-    end
+### Testing Strategy
+- Unit tests for utility functions
+- Component tests for UI elements
+- API route tests
+- End-to-end tests for critical flows
 
-    subgraph Dashboard
-        J --> M[View All Projects]
-        K --> N[View Assigned Projects]
-        L --> O[View Client Projects]
-        M --> P[Project Analytics]
-        N --> P
-        O --> P
-        P --> Q[Real-time Charts]
-        P --> R[Status Widgets]
-        P --> S[Timeline View]
-    end
+### Performance Targets
+- Page load time < 2 seconds
+- First contentful paint < 1 second
+- Time to interactive < 3 seconds
+- API response time < 300ms
 
-    subgraph Project Management
-        M --> T[Create New Project]
-        M --> U[Edit Project]
-        M --> V[Delete Project]
-        N --> W[View Project Details]
-        O --> W
-        W --> X[Kanban Board]
-        X --> Y[Create Task]
-        X --> Z[Edit Task]
-        X --> AA[Delete Task]
-        X --> AB[Drag-Drop Tasks]
-        Y --> AC[Assign Team Members]
-        Z --> AC
-        AC --> AD[Set Deadlines]
-        AD --> AE[Track Time]
-    end
-
-    subgraph Data Visualization
-        P --> AF[Team Performance Charts]
-        P --> AG[Deadline Tracking]
-        P --> AH[Resource Allocation]
-        AF --> AI[Export Reports]
-        AG --> AI
-        AH --> AI
-    end
-
-    subgraph PWA Features
-        A --> AJ[Install App Prompt]
-        AJ -->|Accept| AK[Add to Home Screen]
-        AJ -->|Decline| A
-        AK --> AL[Offline Access]
-        AL --> AM[Push Notifications]
-        AM --> AN[Sync When Online]
-    end
-
-    subgraph Responsive Design
-        A --> AO{Device Detection}
-        AO -->|Desktop| AP[Desktop Layout]
-        AO -->|Tablet| AQ[Tablet Layout]
-        AO -->|Mobile| AR[Mobile Layout]
-        AP --> AS[Dark Theme with Purple Accents]
-        AQ --> AS
-        AR --> AS
-    end
-
-Requirements:
-
-Use Next.js 14 with the App Router.
-Follow a dark-themed UI design as specified.
-Adhere to modern web development best practices for scalability and security.
-Incorporate extensive testing (unit, integration, and E2E).
-Document the code and overall architecture in detail.
+### Deployment Pipeline
+- GitHub Actions for CI/CD
+- Vercel for hosting
+- Environment-specific configuration
+- Automated testing before deployment
