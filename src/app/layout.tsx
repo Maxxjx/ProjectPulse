@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 }
 
 // Initialize database connection when the app starts
-initDatabaseConnection().catch((error) => {
+initDatabaseConnection().catch((error : any) => {
   console.error("Failed to initialize database:", error)
 })
 

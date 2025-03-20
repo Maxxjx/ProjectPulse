@@ -1,36 +1,38 @@
-import { NextResponse } from 'next/server';
-import { NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 
-export async function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname;
-  
+// This middleware could be enhanced to check for database connectivity
+// and set a request header or context value to indicate fallback to mock data if needed
+export function middleware(request: NextRequest) {
+  // Get the pathname
+  const path = request.nextUrl.pathname
+
   // Define public paths that don't require authentication
-  const isPublicPath = path === '/' || path === '/login';
-  
-  // Get the token from the request
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development-only',
-  });
-  
-  // Redirect authenticated users away from public paths
-  if (isPublicPath && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-  
-  // Redirect unauthenticated users to login
+  const publicPaths = ["/login", "/reset-password", "/"]
+  const isPublicPath = publicPaths.some((publicPath) => path === publicPath || path.startsWith(`${publicPath}/`))
+
+  // Check if the user is authenticated
+  const token = request.cookies.get("authToken")?.value
+
+  // If the path is not public and the user is not authenticated, redirect to login
   if (!isPublicPath && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL("/login", request.url))
   }
-  
-  // (Ensure role-based rules remain enforced by checking session data in your dashboard pages)
-  // For example, you can later extend this middleware to validate token.role before allowing access.
-  
-  return NextResponse.next();
+
+  // Continue with the request
+  return NextResponse.next()
 }
 
-// Apply the middleware to specific paths
 export const config = {
-  matcher: ['/', '/login', '/dashboard/:path*'],
-};
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public (public files)
+     */
+    "/((?!_next/static|_next/image|favicon.ico|public).*)",
+  ],
+}
+

@@ -1,37 +1,60 @@
-// This file exports the shared data service instance for the application
-import { initializeDataService, userService, projectService, taskService, timeEntryService } from './data/dataService';
+import type { DataService } from "./data/types"
+import { MockDataService } from "./data/mockDataService"
+import { ProjectService } from "./data/projectService"
 
-// Combine all services into a single object
-export const DataServiceInstance = {
-  // User methods
-  getUsers: async () => userService.getUsers(),
-  getUserById: async (userId: string) => userService.getUserById(userId),
-  
-  // Project methods
-  getProjects: async () => projectService.getProjects(),
-  getProjectById: async (projectId: string) => projectService.getProjectById(projectId),
-  
-  // Task methods
-  getTasks: async () => taskService.getTasks(),
-  getTasksByProjectId: async (projectId: string) => taskService.getTasksByProjectId(projectId),
-  getTaskById: async (taskId: string) => taskService.getTaskById(taskId),
-  
-  // Time entry methods
-  getTimeEntries: async () => timeEntryService.getTimeEntries(),
-  getTimeEntriesByUserId: async (userId: string) => timeEntryService.getTimeEntriesByUserId(userId),
-  getTimeEntriesByTaskId: async (taskId: string) => timeEntryService.getTimeEntriesByTaskId(taskId),
-  
-  // Make sure data service is initialized (can be called manually but will be auto-called on first use)
-  initialize: async () => await initializeDataService()
-};
+/**
+ * Factory function that returns the appropriate data service based on configuration
+ * Prioritizes database access with fallback to mock data
+ */
+export const getDataService = (): DataService => {
+  // Check environment variable properly
+  const usePrisma = process.env.USE_PRISMA === "true"
 
-// Initialize the data service automatically on import
-// eslint-disable-next-line no-unused-vars
-const initialize = (async () => {
-  try {
-    await DataServiceInstance.initialize();
-    console.log('Application started with data service.');
-  } catch (error) {
-    console.error('Failed to initialize data service:', error);
+  // Create both services for potential fallback
+  const mockService = new MockDataService()
+
+  if (usePrisma) {
+    try {
+      const dbService = new ProjectService()
+
+      // Create a proxy service that falls back to mock data on errors
+      return new Proxy(dbService, {
+        get: (target, prop) => {
+          const originalMethod = target[prop as keyof DataService]
+
+          // If the property is not a function, return it directly
+          if (typeof originalMethod !== "function") {
+            return originalMethod
+          }
+
+          // Return a wrapped function that catches errors and falls back to mock data
+          return async (...args: any[]) => {
+            try {
+              return await originalMethod.apply(target, args)
+            } catch (error) {
+              console.error(`Database operation failed for ${String(prop)}:`, error)
+              console.log(`Falling back to mock data for ${String(prop)}`)
+
+              // Fall back to the mock service method
+              const mockMethod = mockService[prop as keyof DataService]
+              if (typeof mockMethod === "function") {
+                return mockMethod.apply(mockService, args)
+              }
+              throw error
+            }
+          }
+        },
+      })
+    } catch (error) {
+      console.error("Failed to initialize database service:", error)
+      console.log("Using mock data service as fallback")
+    }
   }
-})(); 
+
+  // Return mock service if database is not enabled or initialization failed
+  return mockService
+}
+
+// Export a singleton instance
+export const dataService = getDataService()
+
