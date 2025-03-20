@@ -254,18 +254,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }
 
   if (!session) {
-    // Redirect to login page or show access denied
-    return (
-      <div className="min-h-screen bg-[#1F2937] flex items-center justify-center">
-        <div className="text-center" role="alert" aria-live="assertive">
-          <h2 className="text-xl font-bold mb-4">Access Denied</h2>
-          <p className="text-gray-400 mb-4">You must be signed in to access this page.</p>
-          <Link href="/login" className="bg-[#8B5CF6] hover:bg-opacity-90 transition px-4 py-2 rounded">
-            Sign In
-          </Link>
-        </div>
-      </div>
-    );
+  // Redirect to homepage immediately
+  if (typeof window !== 'undefined') {
+    window.location.href = '/';
+  }
+  return null; // Return nothing while redirecting
   }
 
   return (

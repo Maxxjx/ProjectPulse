@@ -30,7 +30,11 @@ export async function initializeDataService() {
 // Data services that use database with fallback to mock
 export const userService = {
   getUsers: async (): Promise<User[]> => {
-    if (useMockData) return mockDataService.userService.getUsers();
+    console.log(`[Debug] getUsers called. Using mock data: ${useMockData}`);
+    if (useMockData) {
+      console.log('[Debug] Falling back to mock data for getUsers');
+      return mockDataService.userService.getUsers();
+    }
     
     try {
       const users = await prisma.user.findMany();
