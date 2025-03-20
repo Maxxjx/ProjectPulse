@@ -113,3 +113,72 @@ stateDiagram-v2
     Success --> Idle: reset
     Error --> Idle: retry
 ```
+## user-flow Diagram
+```mermaid
+graph TD
+    A[User Visits Site] --> B{Authenticated?}
+    B -->|No| C[Login/Register Page]
+    B -->|Yes| D[Dashboard View]
+    
+    C --> C1[Login Form]
+    C --> C2[Register Form]
+    C1 --> C3{Valid Credentials?}
+    C3 -->|No| C4[Show Error Message]
+    C3 -->|Yes| C5[Set Auth Cookies/Tokens]
+    C5 --> D
+    C2 --> C6[Create New Account]
+    C6 --> C5
+    
+    D --> D1[View Project Cards]
+    D --> D2[View Task Status Charts]
+    D --> D3[View Team Performance Metrics]
+    D --> D4[Create New Project]
+    
+    D1 --> E[Project Detail View]
+    D4 --> E
+    
+    E --> E1[View Project Information]
+    E --> E2[View Project Tasks]
+    E --> E3[Edit Project Details]
+    E --> E4[Delete Project]
+    E --> E5[Create New Task]
+    
+    E2 --> F[Kanban Board View]
+    F --> F1[View Tasks by Status]
+    F --> F2[Drag-and-Drop Task Management]
+    F2 --> F3[Update Task Status]
+    
+    E5 --> G[Task Creation Form]
+    G --> G1[Submit New Task]
+    G1 --> F
+    
+    F1 --> H[Task Detail View]
+    H --> H1[View Task Information]
+    H --> H2[Edit Task Details]
+    H --> H3[Delete Task]
+    H --> H4[Assign Task to Team Member]
+    
+    subgraph Role-Based Access Control
+      I{User Role?}
+      I -->|Admin| J1[Full Access to All Features]
+      I -->|Team Member| J2[Limited Project Management Access]
+      I -->|Client| J3[View-Only Access to Assigned Projects]
+      
+      J1 --> K1[Manage All Projects]
+      J1 --> K2[Manage All Users]
+      J1 --> K3[View All Analytics]
+      
+      J2 --> L1[Manage Assigned Projects]
+      J2 --> L2[Manage Assigned Tasks]
+      J2 --> L3[View Team Analytics]
+      
+      J3 --> M1[View Assigned Projects]
+      J3 --> M2[View Project Progress]
+      J3 --> M3[Comment on Tasks]
+    end
+    
+    D --> I
+    E --> I
+    F --> I
+    H --> I
+```
