@@ -707,13 +707,17 @@ export default function DashboardHomeView() {
 
   // Render role-specific dashboard
   const renderDashboard = () => {
-    switch (session?.user?.role) {
-      case 'admin':
+    if (!session?.user?.role) {
+      return <TeamDashboard />;
+    }
+
+    switch (session.user.role.toUpperCase()) {
+      case 'ADMIN':
         return <AdminDashboard />;
-      case 'team':
-        return <TeamDashboard />;
-      case 'client':
+      case 'CLIENT':
         return <ClientDashboard />;
+      case 'TEAM':
+        return <TeamDashboard />;
       default:
         return <TeamDashboard />;
     }

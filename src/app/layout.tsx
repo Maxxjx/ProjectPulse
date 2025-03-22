@@ -1,63 +1,46 @@
+'use client';
+
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import AuthProvider from '@/components/AuthProvider';
+import { useEffect } from 'react';
 import { initializeDataService } from '@/lib/data/dataService';
 import { initializeDatabase } from '@/lib/data/initDatabase';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata: Metadata = {
-  title: 'ProjectPulse',
-  description: 'A comprehensive project management system',
-  manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'ProjectPulse',
-  },
-  formatDetection: {
-    telephone: false,
-  },
-};
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: 'cover',
-  themeColor: '#8B5CF6',
-};
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Initialize database connection and data
-  initializeDataService()
-    .then(isDbConnected => {
-      console.log(`Application started with ${isDbConnected ? 'database' : 'mock data'} service.`);
-      
-      // If database is connected, try to initialize it with basic data
-      if (isDbConnected) {
-        initializeDatabase()
-          .then(success => {
-            if (success) {
-              console.log('Database initialization completed.');
-            } else {
-              console.warn('Database initialization failed.');
-            }
-          })
-          .catch(error => {
-            console.error('Error during database initialization:', error);
-          });
-      }
-    })
-    .catch(error => {
-      console.error('Failed to initialize data service:', error);
-    });
+  useEffect(() => {
+    // Initialize database connection and data
+    initializeDataService()
+      .then(isDbConnected => {
+        console.log(`Application started with ${isDbConnected ? 'database' : 'mock data'} service.`);
+        
+        // If database is connected, try to initialize it with basic data
+        if (isDbConnected) {
+          initializeDatabase()
+            .then(success => {
+              if (success) {
+                console.log('Database initialization completed.');
+              } else {
+                console.warn('Database initialization failed.');
+              }
+            })
+            .catch(error => {
+              console.error('Error during database initialization:', error);
+            });
+        }
+      })
+      .catch(error => {
+        console.error('Failed to initialize data service:', error);
+      });
+  }, []);
 
   return (
     <html lang="en">

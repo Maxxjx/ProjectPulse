@@ -120,9 +120,7 @@ export default function Login() {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-400">
                   Password
                 </label>
-                <Link href="/reset-password" className="text-xs text-[#8B5CF6] hover:underline">
-                  Forgot password?
-                </Link>
+            
               </div>
               <input
                 id="password"
@@ -146,6 +144,9 @@ export default function Login() {
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-400">
                   Remember me
                 </label>
+                <Link href="/reset-password" className="text-xs text-[#8B5CF6] hover:underline">
+                  Forgot password?
+                </Link>
               </div>
             </div>
 

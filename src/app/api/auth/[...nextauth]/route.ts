@@ -12,28 +12,28 @@ const mockUsers = [
     name: "Demo User",
     email: "demo@projectpulse.com",
     password: "demo1234",
-    role: "user"
+    role: "USER"  // Updated to uppercase
   },
   {
     id: "2",
     name: "Admin User",
     email: "admin@projectpulse.com",
     password: "admin1234",
-    role: "admin"
+    role: "ADMIN"  // Updated to uppercase
   },
   {
     id: "3",
     name: "Team Member",
     email: "team@projectpulse.com",
     password: "team1234",
-    role: "team"
+    role: "TEAM"  // Updated to uppercase
   },
   {
     id: "4",
     name: "Client User",
     email: "client@projectpulse.com",
     password: "client1234",
-    role: "client"
+    role: "CLIENT"  // Updated to uppercase
   }
 ];
 
@@ -51,22 +51,29 @@ const handler = NextAuth({
         }
 
         try {
-          // Check if database is available
           const isDbConnected = await testDatabaseConnection();
+          console.log('Database connection:', isDbConnected);
           
           if (isDbConnected) {
-            // Use database for authentication
             const user = await prisma.user.findUnique({
               where: { email: credentials.email }
             });
+            console.log('User found:', user ? 'yes' : 'no');
             
             if (!user || !user.password) {
               return null;
             }
+
+            // Add debug logging to see the password comparison
+            console.log('Attempting to validate password');
+            console.log('Input password:', credentials.password);
+            console.log('Stored password hash:', user.password);
             
             const isPasswordValid = await compare(credentials.password, user.password);
+            console.log('Password validation result:', isPasswordValid);
             
             if (!isPasswordValid) {
+              console.log('Password validation failed');
               return null;
             }
             
@@ -74,10 +81,10 @@ const handler = NextAuth({
               id: user.id,
               name: user.name,
               email: user.email,
-              role: user.role
+              role: user.role.toUpperCase() // Make sure role is uppercase
             };
           } else {
-            // Use mock users as fallback
+            // For mock users, use plain text comparison
             const user = mockUsers.find(user => user.email === credentials.email);
             
             if (!user || user.password !== credentials.password) {
@@ -88,24 +95,12 @@ const handler = NextAuth({
               id: user.id,
               name: user.name,
               email: user.email,
-              role: user.role
+              role: user.role.toUpperCase() // Make sure role is uppercase
             };
           }
         } catch (error) {
           console.error("Authentication error:", error);
-          // Use mock users as fallback if there's an error
-          const user = mockUsers.find(user => user.email === credentials.email);
-          
-          if (!user || user.password !== credentials.password) {
-            return null;
-          }
-          
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role
-          };
+          return null;
         }
       }
     })

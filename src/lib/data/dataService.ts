@@ -15,6 +15,7 @@ let useMockData = true;
 
 // Initialize the service to check if database is available
 export async function initializeDataService() {
+  // For GitHub Codespaces, we're in a Node.js environment even though it's browser-based
   const isDbConnected = await testDatabaseConnection();
   useMockData = !isDbConnected;
   
@@ -26,6 +27,8 @@ export async function initializeDataService() {
   
   return !useMockData;
 }
+
+// Reminder: Ensure that initializeDataService is called before any data service is used.
 
 // Data services that use database with fallback to mock
 export const userService = {
@@ -501,4 +504,4 @@ export const timeEntryService = {
   }
 };
 
-// Export additional services as needed 
+// Export additional services as needed

@@ -28,7 +28,7 @@ async function main() {
       name: 'Rajesh Sharma',
       email: 'admin@projectpulse.com',
       password: adminPassword,
-      role: 'admin',
+      role: 'ADMIN',
       position: 'Project Director',
       department: 'Management',
       avatar: 'https://randomuser.me/api/portraits/men/68.jpg',
@@ -45,7 +45,7 @@ async function main() {
       name: 'Priya Patel',
       email: 'priya@projectpulse.com',
       password: teamPassword,
-      role: 'team',
+      role: 'TEAM',
       position: 'Senior Developer',
       department: 'Engineering',
       avatar: 'https://randomuser.me/api/portraits/women/45.jpg',
@@ -60,7 +60,7 @@ async function main() {
       name: 'Vikram Singh',
       email: 'vikram@projectpulse.com',
       password: teamPassword,
-      role: 'team',
+      role: 'TEAM',
       position: 'UI/UX Designer',
       department: 'Design',
       avatar: 'https://randomuser.me/api/portraits/men/45.jpg',
@@ -75,7 +75,7 @@ async function main() {
       name: 'Ananya Desai',
       email: 'ananya@projectpulse.com',
       password: teamPassword,
-      role: 'team',
+      role: 'TEAM',
       position: 'QA Engineer',
       department: 'Quality Assurance',
       avatar: 'https://randomuser.me/api/portraits/women/22.jpg',
@@ -92,7 +92,7 @@ async function main() {
       name: 'Arjun Mehta',
       email: 'arjun@tataprojects.com',
       password: clientPassword,
-      role: 'client',
+      role: 'CLIENT',
       position: 'CTO',
       department: 'Executive',
       avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
@@ -107,7 +107,7 @@ async function main() {
       name: 'Deepika Reddy',
       email: 'deepika@reliancetech.com',
       password: clientPassword,
-      role: 'client',
+      role: 'CLIENT',
       position: 'Product Manager',
       department: 'Product',
       avatar: 'https://randomuser.me/api/portraits/women/33.jpg',
@@ -124,7 +124,7 @@ async function main() {
       name: 'Demo User',
       email: 'demo@projectpulse.com',
       password: demoPassword,
-      role: 'user',
+      role: 'USER',
       createdAt: new Date('2023-12-22'),
       updatedAt: new Date('2023-12-22'),
     },
@@ -492,4 +492,4 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-  }); 
+  });

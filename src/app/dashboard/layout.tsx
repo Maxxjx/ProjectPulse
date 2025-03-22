@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useUnreadNotificationsCount } from '@/lib/hooks/useNotifications';
 import NotificationsPanel from '@/components/NotificationsPanel';
+import { Sidebar } from "@/components/sidebar";
 
 // Icons
 const HomeIcon = () => (
@@ -473,7 +474,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <DashboardContent>{children}</DashboardContent>
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1">
+          {children}
+        </main>
+      </div>
     </QueryClientProvider>
   );
 }
